@@ -1,0 +1,7 @@
+*.txt
+*.csv
+*.dta
+*.rda
+*.rds
+
+.Rproj.user
