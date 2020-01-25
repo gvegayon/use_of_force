@@ -21,7 +21,7 @@ models <- all_models(
   c(
     "balance", "triangle", "edges", "isolates",
     "degree1.5", 
-    'nodematch("officer_race")', 'nodecov("officer_race")'
+    'nodematch("officer_race")', 'nodefactor("officer_race")'
     )
   )
 
@@ -30,7 +30,7 @@ models <- all_models(
 # Fitting the models using slurmr ----------------------------------------------
 ans <- Slurm_lapply(
   X          = models,
-  FUN        = ergm_lite(m),
+  FUN        = ergm_lite,
   njobs      = 75L,
   mc.cores   = 1L,
   tmp_path   = "/staging/ggv",
