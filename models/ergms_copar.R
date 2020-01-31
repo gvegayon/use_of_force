@@ -5,9 +5,9 @@
 #SBATCH --time=05:00:00
 #SBATCH --mem-per-cpu=8G
 
-
-library(ergm)
-library(intergraph)
+library(network, lib.loc = "/auto/rcf-proj2/wjg/vegayon/R/x86_64-pc-linux-gnu-library/3.6")
+library(ergm, lib.loc = "/auto/rcf-proj2/wjg/vegayon/R/x86_64-pc-linux-gnu-library/3.6")
+library(intergraph, lib.loc = "/auto/rcf-proj2/wjg/vegayon/R/x86_64-pc-linux-gnu-library/3.6")
 library(texreg)
 library(slurmR)
 
