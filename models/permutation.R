@@ -22,3 +22,5 @@ ans <- get_features(networks[[1]], c("officer_race"))
 
 # Finding neareast neighbour
 d <- dist(ans)
+library(blopmatch)
+ans <- matching_group(rep(-1, nrow(ans)), ans)
