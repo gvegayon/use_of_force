@@ -1,9 +1,10 @@
 # Powersets of models
-powersets <- function(x, include_empty = FALSE) {
+powersets <- function(x, include_empty = FALSE, max_size = 5) {
   
   k <- ifelse(include_empty, 0, 1)
+  max_size <- min(max_size, length(x))
   ans <- NULL
-  for (i in k:length(x)) {
+  for (i in k:max_size) {
     ans <- c(ans, combn(x, i, simplify = FALSE))
   }
   
@@ -21,7 +22,7 @@ all_models <- function(nets., terms.) {
   
   ans <- paste(
     nets.,
-    "~",
+    "~ edges +",
     sapply(powersets(terms.), paste, collapse = " + ")
   )
   ans <- lapply(ans, as.formula)

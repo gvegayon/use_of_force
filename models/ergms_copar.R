@@ -4,6 +4,8 @@
 #SBATCH --account=lc_ggv
 #SBATCH --time=05:00:00
 #SBATCH --mem-per-cpu=8G
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=g.vegayon@gmail.com
 
 library(network, lib.loc = "/auto/rcf-proj2/wjg/vegayon/R/x86_64-pc-linux-gnu-library/3.6")
 library(ergm, lib.loc = "/auto/rcf-proj2/wjg/vegayon/R/x86_64-pc-linux-gnu-library/3.6")
@@ -19,10 +21,16 @@ networks <- lapply(networks, asNetwork)
 models <- all_models(
   paste0("networks$`", names(networks), "`"),
   c(
-    "balance", "triangle", "edges", "isolates",
-    "degree1.5", 
-    'nodematch("officer_race")', 'nodefactor("officer_race")'
-    )
+    "balance", "triangle", "isolates",
+    "degree1.5",
+    'nodematch("officer_race")', 'nodefactor("officer_race")',
+    'nodematch("officer_male")', 'nodefactor("officer_male")',
+    'nodematch("officer_county_mode")', 'nodefactor("officer_county_mode")',
+    'nodematch("officer_mean_years")', 'nodefactor("officer_mean_years")'#,           # can't recall how to change this one to tenure diff...
+    # 'nodematch("officer_sup_mode")', 'nodefactor("officer_sup_mode")'#,
+    # 'nodematch("officer_po")', 'nodefactor("officer_po")',
+    # 'nodematch("officer_nforce")', 'nodefactor("officer_nforce")'
+  )
   )
 
 
@@ -31,7 +39,7 @@ models <- all_models(
 ans <- Slurm_lapply(
   X          = models,
   FUN        = ergm_lite,
-  njobs      = 75L,
+  njobs      = 200L,
   mc.cores   = 1L,
   tmp_path   = "/staging/ggv",
   plan       = "collect",

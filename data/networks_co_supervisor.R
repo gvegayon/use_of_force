@@ -1,7 +1,7 @@
 library(igraph)
 
 dat <- read.csv(
-  "data-raw/njforce_191230.csv",
+  "data-raw/njforce_200210.csv",
   stringsAsFactors = FALSE
   )
 
@@ -11,6 +11,16 @@ races <- sort(unique(dat$officer_race))
 races_col <- c("black", "tomato", "steelblue", "gray", "green")
 races_col <- adjustcolor(races_col, .5)
 
+ego_covariates <- c(
+  "officer_race",
+  "officer_male",
+  "officer_county_mode",
+  "officer_meanyears",
+  "officer_sup_mode"#,
+  #"officer_po",
+  #"officer_nforce"
+)
+
 networks <- vector("list", length(towns))
 names(networks) <- towns
 for (town. in towns) {
@@ -18,7 +28,10 @@ for (town. in towns) {
   # Geting the officers from a given town
   dat_town <- subset(
     dat, town == town.,
-    select = c(officerid, supervisorid)
+    select = c(
+      "date", "officerid", "supervisorid", "incidentid", "firearm_discharged",
+      ego_covariates
+      )
     )
   dat_town <- unique(dat_town)
   
@@ -29,7 +42,10 @@ for (town. in towns) {
   # Creating the edgelist
   colnames(networks[[town.]])[cnames == "officerid"] <- "ego"
   networks[[town.]] <- merge(
-    networks[[town.]], dat_town, by = c("supervisorid"))
+    networks[[town.]][, setdiff(colnames(networks[[town.]]), ego_covariates)],
+    dat_town[, c("officerid", "supervisorid")],
+    by = c("supervisorid")
+    )
   
   networks[[town.]] <- subset(networks[[town.]], ego != officerid)
   
@@ -50,7 +66,8 @@ for (town. in towns) {
   
   vertex_town <- subset(
     dat, town == town.,
-    select = c(officerid, officer_race))
+    select = unique(c("officerid", "officer_race", ego_covariates))
+    )
   
   vertex_town <- unique(vertex_town)
   

@@ -1,9 +1,35 @@
 library(igraph)
 
 dat <- read.csv(
-  "data-raw/njforce_191230.csv",
+  "data-raw/njforce_200210.csv",
   stringsAsFactors = FALSE
   )
+
+# Naive approach towards missingness, for now, we just drop all observations that
+# have missing in the relevant variables
+ego_covariates <- c(
+  "officer_race",
+  "officer_male",
+  "officer_county_mode",
+  "officer_meanyears" #,
+  # "officer_sup_mode"#,
+  # These cannot be included since they are dynamic
+  #"officer_po",     
+  #"officer_nforce"
+)
+
+# The first four of above are OK in terms of missingness,
+# less that 10% of the sample is missing. We will work with that
+#
+# "officer_race",
+# "officer_male",
+# "officer_county_mode",
+# "officer_meanyears",
+# > table(complete.cases( dat[, ego_covariates[1:4]]))
+# 
+# FALSE  TRUE 
+#   222  3823 
+dat <- dat[complete.cases( dat[, ego_covariates[1:4]]),]
 
 # Networks per town-id
 towns <- sort(unique(dat$town))
@@ -18,7 +44,10 @@ for (town. in towns) {
   # Geting the officers from a given town
   dat_town <- subset(
     dat, town == town.,
-    select = c(date, officerid, incidentid, firearm_discharged)
+    select = c(
+      "date", "officerid", "incidentid", "firearm_discharged",
+      ego_covariates
+      )
     )
   
   # Identifying the ties
@@ -27,8 +56,13 @@ for (town. in towns) {
   
   # Creating the edgelist
   colnames(networks[[town.]])[cnames == "officerid"] <- "ego"
+  # networks[[town.]] <- merge(
+  #   networks[[town.]], dat_town, by = c("incidentid"))
   networks[[town.]] <- merge(
-    networks[[town.]], dat_town, by = c("incidentid"))
+    networks[[town.]][, setdiff(colnames(networks[[town.]]), ego_covariates)],
+    dat_town[, c("officerid", "incidentid")],
+    by = c("incidentid")
+  )
   
   networks[[town.]] <- subset(networks[[town.]], ego != officerid)
   
@@ -49,7 +83,8 @@ for (town. in towns) {
   
   vertex_town <- subset(
     dat, town == town.,
-    select = c(officerid, officer_race))
+    select = unique(c("officerid", ego_covariates))
+    )
   
   vertex_town <- unique(vertex_town)
   
