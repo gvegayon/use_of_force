@@ -11,32 +11,37 @@ ergms <- ergms[which(!sapply(ergms, inherits, what = "error"))]
 net  <- sapply(ergms, "[[", "network.")
 
 ans <- data.table(
-  aic     = sapply(ergms, function(i) AIC(i$fit)),
-  bic     = sapply(ergms, function(i) AIC(i$fit)),
-  network = net,
-  model   = sapply(ergms, "[[", "model."),
-  fit     = lapply(ergms, "[[", "fit.")
+  aic      = sapply(ergms, function(i) AIC(i$fit)),
+  bic      = sapply(ergms, function(i) AIC(i$fit)),
+  location = net,
+  model    = sapply(ergms, "[[", "model."),
+  fit      = lapply(ergms, "[[", "fit.")
   )
 
-ans[, network := gsub(".+[$]", "", network)]
+# Too big
+rm(ergms)
+gc()
+
+ans[, location := gsub(".+[$]", "", location)]
 
 # They should have the edges term
 ans <- ans[grepl("edges", model),]
   
-ans[, rank := order(bic, aic, decreasing = FALSE), by = "network"]
-ans <- ans[rank <= 10]
+ans <- ans[order(bic, aic, decreasing = FALSE)]
+ans[, rank := 1L:.N, by = location]
+# ans <- ans[rankd, by = location]
+ans <- ans[rank <= 20]
 
 # Indentifying the top 10 models per network
-cities <- sort(unique(ans$network))
+cities <- sort(unique(ans$location))
 summaries <- structure(vector("list", length(cities)), names = cities)
 
 unlink("models/ergms_copar-analysis.txt")
-ans <- ans[order(network, rank), ]
 for (city in cities) {
 
   # Creating the tables  
   summaries[[city]] <- screenreg(
-    ans[network == city]$fit
+    ans[location == city]$fit
     )
   
   # Saving the tables

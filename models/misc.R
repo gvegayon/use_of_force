@@ -14,7 +14,7 @@ powersets <- function(x, include_empty = FALSE, max_size = 5) {
 
 # This creates all combinations of models based on a set of terms
 # and returns a vector of formulas that can be used directly
-all_models <- function(nets., terms.) {
+all_models <- function(nets., terms., max_size=4) {
   
   if (length(nets.) > 1) {
     return(unlist(lapply(nets., all_models, terms.)))
@@ -23,7 +23,7 @@ all_models <- function(nets., terms.) {
   ans <- paste(
     nets.,
     "~ edges +",
-    sapply(powersets(terms.), paste, collapse = " + ")
+    sapply(powersets(terms., max_size = max_size), paste, collapse = " + ")
   )
   ans <- lapply(ans, as.formula)
   ans <- lapply(ans, `environment<-`, .GlobalEnv)
@@ -34,6 +34,19 @@ all_models <- function(nets., terms.) {
 
 # A wrapper that makes fitting easier
 ergm_lite <- function(...) {
+  
+  if (exists(".counter.", .GlobalEnv)) {
+    .counter. <<- .counter. + 1L
+  } else {
+    assign(".counter.", 1L, envir = .GlobalEnv)
+  }
+  
+  if (!(.counter. %% 10))
+    message(
+      paste(rep("/", 80), collapse=""),
+      "\nModel ", .counter., "\n",
+      paste(rep("/", 80), collapse="")
+      )
   
   ans <- tryCatch(
     ergm(...), error = function(e) e
@@ -47,7 +60,7 @@ ergm_lite <- function(...) {
   list(
     model.   = model.,
     network. = gsub("\\s*[~].+", "", model.),
-    fit.     = ans
+    fit.     = tryCatch(texreg::extract(ans), error = function(e) e)
   )
   
 }
