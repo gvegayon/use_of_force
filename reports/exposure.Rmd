@@ -1,0 +1,154 @@
+---
+title: "Dynamic Exposure"
+output: html_document
+---
+
+```{r}
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+# Overview
+
+Exposure dynamically until the first firearm-related incident. In particular, we
+use the following definition:
+
+Given that there was an incident, what is the effect of exposure to previous firearm
+incidents (indirect exposure)?
+
+Question: What type of events are the most relevant for the analysis? Is there a
+way to classify the events?
+
+
+```{r}
+library(data.table)
+
+# Reading the data and identifying individuals and their first shooting event
+njforce <- data.table::fread("../data-raw/njforce_200210.csv")
+incidents <- subset(
+  njforce,
+  select = c(
+    date, officerid, firearm_discharged, firearm_pointed, incidentid,
+    officer_male, officer_nyears, officer_race, officer_rank, town,
+    officer_po, officer_sleo, nsubjects
+    ))
+incidents[, date := as.Date(date, format = "%m/%d/%Y")]
+```
+
+I don't see many discharged incidents, so we will look at pointed. Only 11 records
+show discharged weapon, though 764 are firearm pointed. For the 11 records, it
+would suffice do a qualitative analysis.
+
+```{r}
+table(incidents$firearm_pointed, incidents$firearm_discharged)
+```
+
+How many officers per incident?
+
+```{r}
+# How many officers per incident
+tab <- table(njforce[, list(N=.N), by = incidentid]$N)
+tab <- cbind(
+  N = tab,
+  pcent = tab/sum(tab),
+  cum_pcent = cumsum(tab/sum(tab))
+  )
+knitr::kable(tab)
+```
+
+
+# Calculating Dynamic Exposure
+
+
+
+1.  Compute the number of events until the date (running count), this will also
+    imply tagging officers since when they were firearm-involved.
+
+2.  Then, for each individual+event, we compute exposure to that date:
+    
+    a. Number of its neighbors that were exposed to a firearm related event.
+    
+    b. a
+
+```{r exposure-calc, cache = TRUE}
+# Counting the number of guns pointed
+incidents[, npointed := .N, by = "incidentid"]
+
+# Ordering the data for some cumulative computations
+incidents <- incidents[order(officerid, date),]
+
+# Event number counter
+incidents[, nevent := 1:.N, by = "officerid"]
+
+# Creating a cumulative counter per officer
+incidents[, fdischarged := cumsum(firearm_discharged), by = "officerid"]
+incidents[, fpointed    := cumsum(firearm_pointed), by = "officerid"]
+incidents[, fpointed    := cumsum(firearm_pointed), by = "officerid"]
+incidents[, exposed := fpointed != 0]
+
+# Identifying the first event with either pointed or discharged, we will
+# use this later.
+incidents[, first := exposed & !shift(exposed, type="lag", fill=TRUE), by = "officerid"]
+
+# Iterating through each entry
+incidents$exposure_t <- 0L
+for (i in 1:nrow(incidents)) {
+  
+  # Getting the officer id and the date
+  officer_i <- incidents$officerid[i]
+  date_i    <- incidents$date[i]
+  
+  # Subset the data to all incidents in which officer i was involved up to
+  # the i-th date
+  incidents_i <- incidents[officerid == officer_i & date <= date_i]$incidentid
+  incidents_i <- incidents[(incidentid %in% incidents_i) & officerid != officer_i]
+
+  if (nrow(incidents_i) > 0L) {
+    incidents_i <- incidents_i[, list(exposed = max(exposed)), by="officerid"]
+    incidents$exposure_t[i] <- sum(incidents_i$exposed)
+  }
+  
+  if (!(i %% 100))
+    message(i, " out of ", nrow(incidents), " done.")
+  
+}
+
+# Adding other features
+incidents[, female := as.integer(officer_male == 0)]
+incidents[, police := as.integer(officer_po == 1)]
+incidents[, sleo   := as.integer(officer_sleo == 1)]
+```
+
+# Naive models
+
+
+
+```{r results='asis'}
+ans0 <- glm(
+  firearm_pointed ~ exposure_t + nevent + npointed + female +
+    officer_nyears + factor(officer_race),
+  data   = incidents,
+  subset = !exposed | first,
+  family = binomial(link="logit")
+  )
+
+ans1 <- glm(
+  firearm_pointed ~ exposure_t + I(exposure_t * female) + nevent +
+    npointed + female + officer_nyears + factor(officer_race),
+  data   = incidents,
+  subset = !exposed | first,
+  family = binomial(link="logit")
+  )
+
+ans2 <- glm(
+  firearm_pointed ~ exposure_t + I(exposure_t * female) + nevent +
+    npointed + female + officer_nyears + factor(officer_race) + 
+    police + sleo + nsubjects,
+  data   = incidents,
+  subset = !exposed | first,
+  family = binomial(link="logit")
+  )
+
+library(texreg)
+htmlreg(list(ans0, ans1, ans2))
+```
+
