@@ -9,7 +9,7 @@ output: github_document
 library(data.table)
 
 # Reading the data and identifying individuals and their first shooting event
-njforce <- data.table::fread("../data-raw/njforce_200210.csv")
+njforce <- data.table::fread("data-raw/njforce_200210.csv")
 reports <- subset(
   njforce,
   select = c(
@@ -20,7 +20,9 @@ reports <- subset(
 reports[, date := as.Date(date, format = "%m/%d/%Y")]
 ```
 
-Question: How many neighboring events within one month each event has (+-15 days)? 
+# Conditional Permutation Test
+
+Question: How many neighboring events within one month each event has (+-d days)? 
 
 ```{r n-events-1-month}
 incidents <- unique(subset(reports, select = c(incidentid, date, town)))
@@ -62,8 +64,41 @@ a. Generate a permutation (doing $k$ steps)
 
 b. Calculate the vector of exposures for the permutation: $E^{(b)}$
 
-c. Compute the statistic of relevance, e.g. linear regression coefficient or averages.
+c. Compute the statistic of relevance, e.g. linear regression coefficient or averages, using the permuted version of the exposure.
     
 Once we have the distribution of those statistics, we can then compare it to the observed statistic. One example could be the regression coefficient of the exposure parameter, or, following the network matching literature, the coefficient associated with the increment from $e$ to $e + 1$ in the exposure term.
 
+## Selecting the right permutation
+
+```{r avg-dist-per-incident}
+reports <- reports[order(officerid, date)]
+reports[, days_since_last_report := date - shift(date, type = "lag"), by = "officerid"]
+quantile(
+  x     = as.integer(reports$days_since_last_report),
+  probs = c(.025,0.05, .5, .95,.975),
+  na.rm = TRUE
+  )
+hist(as.integer(reports$days_since_last_report), breaks = 100)
+head(as.data.frame(prop.table(table(reports$days_since_last_report))), 20)
+```
+
+## Example 1
+
+```{r Computing-candidates}
+library(njforce)
+candidates <- find_candidates(
+  dates       = reports$date,
+  unit_id     = reports$officerid,
+  incident_id = reports$incidentid,
+  ematch      = as.matrix(reports[, list(officer_male, as.integer(as.factor(town)))]),
+  window      = 10
+)
+```
+
+```{r Def-expo-fun}
+expofun <- function() {
+  reports[, exposure_i := sum(firearm_pointed) - firearm_pointed, by = "incidentid"]
+  reports[, exposure_i := shift(exposure_i, type="lag"), by = "officerid"]
+}
+```
 
