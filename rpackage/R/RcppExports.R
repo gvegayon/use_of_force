@@ -2,28 +2,25 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' Find permutation candidates for each row
-#' @param dates Vector of dates
-#' @param unit_id Integer vector of individuals' ids (to avoid matching with
-#' self).
-#' @param incident_id Integer vector of the corresponding incident (to avoid
-#' matching to the same incident).
-#' @param ematch Integer matrix of variables over which exact match is desired.
-#' @param window Integer scalar. Number of units of time to consider when
-#' identifying candidates (see details)
+#' @param features An integer matrix of features to be match (depending on
+#' the window).
+#' @param window An integer vector with length equal to the number of columns
+#' in `features`.
 #' @details
-#' For each row `i` in the data, a row `j` is a possible permutation candidate if:
-#' - `abs(date[i] - date[j]) <= window`,
-#' - `unit_id` are different,
-#' - `incident_id` are different, and
-#' - `all(ematch[i, ] == ematch[j,])`
+#' Matches (or permutation candidates) are identified depending on the rule
+#' specified by `window`. For feature `k`, the match between `(i,j)` is possible if
+#'
+#' - If `window[k] < 0` and `features[i, k] != features[j, k]`
+#' - If `abs(features[i, k] - features[j, k]) <= window[k]`
+#'
 #' @returns
 #' A list of integer vectors (starting from zero) indicating the position of
 #' the potential permutation.
 #' @export
 #' @useDynLib njforce, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
-find_candidates <- function(dates, unit_id, incident_id, ematch, window) {
-    .Call(`_njforce_find_candidates`, dates, unit_id, incident_id, ematch, window)
+find_candidates <- function(features, window) {
+    .Call(`_njforce_find_candidates`, features, window)
 }
 
 #' Random permutation of the data as a function of `find_candidates`

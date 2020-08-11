@@ -1,6 +1,6 @@
 ---
 title: "Dynamic Exposure"
-output: github_document
+output: html_document
 ---
 
 ```{r}
@@ -243,100 +243,124 @@ htmlreg(
 ## Predicting any incident
 
 ```{r results='asis'}
+library(lme4)
 
 # Lagging self-exposure
 reports[, firearm_pointed_prev := shift(firearm_pointed, type = "lag", fill = TRUE), by = "officerid"]
 reports[, firearm_pointed_prev := cumsum(firearm_pointed_prev), by = "officerid"]
 
+# reports[, nevents_tot := .N, by = "officerid"]
 reports[, relevant_any := 1:.N > 1, by = "officerid"]
 
 reports[, exposure_yesno := as.integer(exposure_d > 0)]
-ans0 <- glm(
+```
+
+```{r fit-ans0, cache=TRUE}
+ans0 <- glmer(
   firearm_pointed ~ exposure_yesno + nevent + nofficers + female +
     officer_nyears + factor(officer_race) + firearm_pointed_prev + violent_or_weapon +
-    factor(town),
+    factor(town) + (1 | officerid),
   data   = reports,
   subset = relevant_any == TRUE,
   family = binomial(link="logit")
   )
+```
 
-ans1 <- glm(
+
+```{r fit-ans1, cache=TRUE}
+ans1 <- glmer(
   firearm_pointed ~ exposure_yesno + I(exposure_yesno * female) + nevent +
     nofficers + female + officer_nyears + factor(officer_race) + firearm_pointed_prev +
-    violent_or_weapon + factor(town),
+    violent_or_weapon + factor(town) + (1 | officerid),
   data   = reports,
   subset = relevant_any == TRUE,
   family = binomial(link="logit")
   )
+```
 
-ans2 <- glm(
+```{r fit-ans2, cache=TRUE}
+ans2 <- glmer(
   firearm_pointed ~ exposure_yesno + I(exposure_yesno * female) + nevent +
     nofficers + female + officer_nyears + factor(officer_race) + 
     police + sleo + nsubjects + firearm_pointed_prev + violent_or_weapon +
-    factor(town),
+    factor(town) + (1 | officerid),
   data   = reports,
   subset = relevant_any == TRUE,
   family = binomial(link="logit")
   )
+```
 
-ans3 <- glm(
+```{r fit-ans3, cache=TRUE}
+ans3 <- glmer(
   firearm_pointed ~ exposure_d + I(exposure_d * female) + I(exposure_d^2) + nevent +
     nofficers + female + officer_nyears + factor(officer_race) + 
     police + sleo + nsubjects + firearm_pointed_prev + violent_or_weapon +
-    factor(town),
+    factor(town) + (1 | officerid),
   data   = reports,
   subset = relevant_any == TRUE,
   family = binomial(link="logit")
   )
+```
 
-ans4 <- glm(
+```{r fit-ans4, cache=TRUE}
+ans4 <- glmer(
   firearm_pointed ~ exposure_d + I(exposure_d * female) + I(exposure_d^2) + nevent +
     nofficers + female + officer_nyears + factor(officer_race) + 
     police + sleo + nsubjects + firearm_pointed_prev + violent_or_weapon +
-    factor(town),
+    factor(town) + (1 | officerid),
   data   = reports,
   subset = relevant_any == TRUE,
   family = binomial(link="logit")
   )
+```
 
-ans5 <- glm(
+```{r fit-ans5, cache=TRUE}
+ans5 <- glmer(
   firearm_pointed ~ exposure_d + I(exposure_d * female) + I(exposure_d^2) + nevent +
     nofficers + female + officer_nyears + factor(officer_race) + 
     police + sleo + nsubjects + firearm_pointed_prev + violent_or_weapon +
-    factor(town) + peer_exp,
+    factor(town) + peer_exp + (1 | officerid),
   data   = reports,
   subset = relevant_any == TRUE,
   family = binomial(link="logit")
   )
+```
 
-ans6 <- glm(
+```{r fit-ans6, cache=TRUE}
+ans6 <- glmer(
   firearm_pointed ~ exposure_d + I(exposure_d^2) + nevent +
     officer_nyears + 
     sleo + nsubjects + firearm_pointed_prev + violent_or_weapon +
-    factor(town),
+    factor(town) + (1 | officerid),
   data   = reports,
   subset = relevant_any == TRUE,
   family = binomial(link="logit")
   )
+```
 
-ans7 <- glm(
+```{r fit-ans7, cache=TRUE}
+ans7 <- glmer(
   firearm_pointed ~ exposure_d + I(exposure_d^2) + nevent +
     officer_nyears + 
-    sleo + nsubjects + firearm_pointed_prev + factor(town),
+    sleo + nsubjects + firearm_pointed_prev + factor(town) + (1 | officerid),
   data   = reports,
   subset = relevant_any == TRUE,
   family = binomial(link="logit")
   )
+```
 
-ans8 <- glm(
+```{r fit-ans8, cache=TRUE}
+ans8 <- glmer(
   firearm_pointed ~ exposure_d + I(exposure_d^2) + nevent +
     officer_nyears + pressure +
-    sleo + nsubjects + firearm_pointed_prev + factor(town),
+    sleo + nsubjects + firearm_pointed_prev + factor(town) + (1 | officerid),
   data   = reports,
   subset = relevant_any == TRUE,
   family = binomial(link="logit")
   )
+```
 
+```{r results='asis'}
 cmap <- c(cmap, list(firearm_pointed_prev = "N Previous Pointed"))
 
 # Officer_race
@@ -349,17 +373,18 @@ library(texreg)
 models <- mget(ls(pattern = "^ans[0-9]+$"))
 
 # Computing McFadden's pseudo r2
-pr2 <- sapply(models, function(m) {
-  1 - with(m, deviance/null.deviance)
-})
+# pr2 <- sapply(models, function(m) {
+#   1 - with(m, deviance/null.deviance)
+# })
 
 auc <- sapply(models, function(m) {
-  AUC::auc(AUC::roc(predict(m, type = "response"), as.factor(m$y)))
+  AUC::auc(AUC::roc(predict(m, type = "response"), as.factor(m@resp$y)))#as.factor(m$y)))
 })
 
 htmlreg(
   models, custom.coef.map = cmap,
-  custom.gof.rows = list("Pseudo R2" = pr2, "AUC" = auc)
+  custom.gof.rows = list(#"Pseudo R2" = pr2,
+    "AUC" = auc)
   )
 # screenreg(models, custom.coef.map = cmap,custom.gof.rows = list("Pseudo R2" = pr2))
 ```

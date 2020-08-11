@@ -1,41 +1,53 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+
+inline bool is_within_window(
+    const IntegerMatrix & x,
+    const IntegerVector & window,
+    int i, int j
+  ) {
+  
+  for (unsigned int ii = 0u; ii < window.size(); ++ii) {
+    
+    if ((window[ii] < 0) && (x(i, ii) == x(j, ii))) { // Must be different
+      return false;
+    } else if (abs(x(i, ii) - x(j ,ii)) > window[ii]) {
+      return false;
+    }
+    
+  }
+  
+  return true;
+  
+}
+
 // [[Rcpp::export]]
 std::vector< std::vector<int> > find_candidates(
-  const IntegerVector & dates,
-  const IntegerVector & officer_id,
-  const IntegerVector & incident_id,
   const IntegerMatrix & ematch,
-  int window
+  const IntegerVector & window
 ) {
   
 
-  std::vector< std::vector< int > > candidates(dates.size());
+  unsigned int n = ematch.nrow();
+  unsigned int k = ematch.ncol();
   
-  for (auto i = 0; i < dates.size(); ++i) {
+  if (window.size() != k)
+    stop("The number of features does not match the length of the window vector.");
+  
+  std::vector< std::vector< int > > candidates(n);
+  
+  for (auto i = 0; i < n; ++i) {
     
     for (auto j = 0; j < i; ++j) {
       
-      if ((officer_id[i] == officer_id[j]) || (incident_id[i] == incident_id[j]))
-        continue;
-      
-      if (abs(dates[i] - dates[j]) <= window) {
-        
-        // Using Rcpp sugar to compare two vectors
-        unsigned int ndiff = 0u;
-        for (auto k = 0u; k < ematch.ncol(); ++k)
-          if (ematch(i, k) != ematch(j, k))
-            ndiff++;
-        
-        if (ndiff > 0u)
-          continue;
-        
+      if (is_within_window(ematch, window, i, j)) {
         candidates[i].push_back(j);
         candidates[j].push_back(i);
       }
-        
+      
     }
+    
   }
   
   return candidates;
@@ -156,8 +168,8 @@ reports <- subset(
 reports[, date := as.Date(date, format = "%m/%d/%Y")]
 
 cand <- find_candidates(
-  dates       = as.integer(reports$date),
-  officer_id  = as.integer(reports$officerid),
+  dates       = as.integer(reports$date), 
+  unit_id  = as.integer(reports$officerid), 
   incident_id = as.integer(reports$incidentid),
   ematch = cbind(
     as.integer(reports$officer_male),
@@ -166,10 +178,11 @@ cand <- find_candidates(
   window = 15  
   )
 
-hist(sapply(cand, length) - 1)
+hist(sapply(cand, length))
 
 # Checking whether we get the same result each time
 set.seed(134)
+View(cbind(0:(nrow(reports) - 1), permute(cand)))
 ans <- replicate(2000, permute(cand), simplify = FALSE)
 
 
@@ -186,6 +199,12 @@ unique(sapply(ans, function(i) length(unique(i))))
  
 # Checking frequencies (is it uniform?)
 ans <- do.call(cbind, ans)
+
+
+unique_ids <- ans - 0:(nrow(ans) - 1)
+unique_ids[] <- as.integer(unique_ids != 0)
+hist(colSums(unique_ids))
+
 ans_freq <- apply(t(ans), 2, table)
 
 # Checking that we always got what it was intended
@@ -197,3 +216,6 @@ ans_cand <- sapply(1:length(ans_cand), function(i) {
 table(ans_cand) # All should be true!
 
 */
+
+
+  

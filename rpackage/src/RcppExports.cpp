@@ -6,17 +6,14 @@
 using namespace Rcpp;
 
 // find_candidates
-std::vector< std::vector<int> > find_candidates(const IntegerVector& dates, const IntegerVector& unit_id, const IntegerVector& incident_id, const IntegerMatrix& ematch, int window);
-RcppExport SEXP _njforce_find_candidates(SEXP datesSEXP, SEXP unit_idSEXP, SEXP incident_idSEXP, SEXP ematchSEXP, SEXP windowSEXP) {
+std::vector< std::vector<int> > find_candidates(const IntegerMatrix& features, const IntegerVector& window);
+RcppExport SEXP _njforce_find_candidates(SEXP featuresSEXP, SEXP windowSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const IntegerVector& >::type dates(datesSEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type unit_id(unit_idSEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type incident_id(incident_idSEXP);
-    Rcpp::traits::input_parameter< const IntegerMatrix& >::type ematch(ematchSEXP);
-    Rcpp::traits::input_parameter< int >::type window(windowSEXP);
-    rcpp_result_gen = Rcpp::wrap(find_candidates(dates, unit_id, incident_id, ematch, window));
+    Rcpp::traits::input_parameter< const IntegerMatrix& >::type features(featuresSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type window(windowSEXP);
+    rcpp_result_gen = Rcpp::wrap(find_candidates(features, window));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -33,7 +30,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_njforce_find_candidates", (DL_FUNC) &_njforce_find_candidates, 5},
+    {"_njforce_find_candidates", (DL_FUNC) &_njforce_find_candidates, 2},
     {"_njforce_permute", (DL_FUNC) &_njforce_permute, 1},
     {NULL, NULL, 0}
 };

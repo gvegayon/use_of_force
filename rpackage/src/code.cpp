@@ -1,21 +1,50 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+inline bool is_within_window(
+    const IntegerMatrix & x,
+    const IntegerVector & window,
+    int i, int j
+) {
+
+  // printf("Comparing (i,j)");
+  // Rcpp::print(wrap(x(i,_)));
+  // Rcpp::print(wrap(x(j,_)));
+
+  unsigned int k = window.size();
+  for (unsigned int f = 0u; f < k; ++f) {
+
+    if ((window[f] < 0) && (x(i, f) == x(j, f))) { // Must be different
+      // if (i < 10 & j <= 10)
+      //   printf("(i,j): (%i, %i) differ in window[%i]\n", i, j, f);
+      return false;
+    } else if ((window[f] >= 0) && (abs(x(i, f) - x(j, f)) > window[f])) {
+      // if (i < 10 & j <= 10) {
+      //   printf("(i,j): (%i, %i) differ in > window[%i]\n", i, j, f);
+      //   Rcpp::print(wrap(x(i,_)));
+      //   Rcpp::print(wrap(x(j,_)));
+      // }
+      return false;
+    }
+
+  }
+
+  return true;
+
+}
+
 //' Find permutation candidates for each row
-//' @param dates Vector of dates
-//' @param unit_id Integer vector of individuals' ids (to avoid matching with
-//' self).
-//' @param incident_id Integer vector of the corresponding incident (to avoid
-//' matching to the same incident).
-//' @param ematch Integer matrix of variables over which exact match is desired.
-//' @param window Integer scalar. Number of units of time to consider when
-//' identifying candidates (see details)
+//' @param features An integer matrix of features to be match (depending on
+//' the window).
+//' @param window An integer vector with length equal to the number of columns
+//' in `features`.
 //' @details
-//' For each row `i` in the data, a row `j` is a possible permutation candidate if:
-//' - `abs(date[i] - date[j]) <= window`,
-//' - `unit_id` are different,
-//' - `incident_id` are different, and
-//' - `all(ematch[i, ] == ematch[j,])`
+//' Matches (or permutation candidates) are identified depending on the rule
+//' specified by `window`. For feature `k`, the match between `(i,j)` is possible if
+//'
+//' - If `window[k] < 0` and `features[i, k] != features[j, k]`
+//' - If `abs(features[i, k] - features[j, k]) <= window[k]`
+//'
 //' @returns
 //' A list of integer vectors (starting from zero) indicating the position of
 //' the potential permutation.
@@ -24,44 +53,39 @@ using namespace Rcpp;
 //' @importFrom Rcpp sourceCpp
 // [[Rcpp::export]]
 std::vector< std::vector<int> > find_candidates(
-    const IntegerVector & dates,
-    const IntegerVector & unit_id,
-    const IntegerVector & incident_id,
-    const IntegerMatrix & ematch,
-    int window
+    const IntegerMatrix & features,
+    const IntegerVector & window
 ) {
 
+  unsigned int n = features.nrow();
+  unsigned int k = features.ncol();
 
-  std::vector< std::vector< int > > candidates(dates.size());
+  if (window.size() != k)
+    stop("The number of features does not match the length of the window vector.");
 
-  for (auto i = 0; i < dates.size(); ++i) {
+  std::vector< std::vector< int > > candidates(n);
 
-    for (auto j = 0; j < i; ++j) {
+  for (unsigned int i = 0u; i < n; ++i) {
 
-      if ((unit_id[i] == unit_id[j]) || (incident_id[i] == incident_id[j]))
-        continue;
+    for (unsigned int j = 0u; j < i; ++j) {
 
-      if (abs(dates[i] - dates[j]) <= window) {
+      if (is_within_window(features, window, i, j)) {
 
-        // Using Rcpp sugar to compare two vectors
-        unsigned int ndiff = 0u;
-        for (int k = 0u; k < ematch.ncol(); ++k) {
-          if (ematch(i, k) != ematch(j, k))
-            ndiff++;
-        }
+        printf("Annotating (%i,%i)!\n", i, j);
+        candidates[i].push_back(j);
+        candidates[j].push_back(i);
 
-          if (ndiff > 0u)
-            continue;
-
-          candidates[i].push_back(j);
-          candidates[j].push_back(i);
       }
 
     }
+
   }
 
   return candidates;
 }
+
+
+
 
 inline unsigned int sample_n(unsigned int n) {
   return (floor(unif_rand() * n));

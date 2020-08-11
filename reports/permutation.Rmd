@@ -1,6 +1,6 @@
 ---
 title: "Permutation"
-output: github_document
+output: html_document
 ---
 
 # Data loading
@@ -86,13 +86,18 @@ head(as.data.frame(prop.table(table(reports$days_since_last_report))), 20)
 
 ```{r Computing-candidates}
 library(njforce)
+reports[, town_id  := as.integer(as.factor(town))]
+reports[, date_num := as.integer(date)]
+reports[, npointed := sum(firearm_pointed), by = "incidentid"]
+
+x <- as.matrix(
+    subset(reports, select = c(date_num, officerid, incidentid, npointed, town_id))
+  )
 candidates <- find_candidates(
-  dates       = reports$date,
-  unit_id     = reports$officerid,
-  incident_id = reports$incidentid,
-  ematch      = as.matrix(reports[, list(officer_male, as.integer(as.factor(town)))]),
-  window      = 10
+  features    = x,
+  window      = c(15, -1, -1, 0, 0)
 )
+hist(sapply(candidates, length))
 ```
 
 ```{r Def-expo-fun}
@@ -102,3 +107,11 @@ expofun <- function() {
 }
 ```
 
+y(i, t ) =  E(i,t-1) + X(i, t)
+y(i, t ) =  E^(b)(i,t-1) + X(i, t)
+
+y(i, t*) =  E(i,t*-1) + X(i, t)
+
+
+Event 1: (A, B, C)
+Event 2: (1, 2)

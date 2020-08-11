@@ -4,21 +4,14 @@
 \alias{find_candidates}
 \title{Find permutation candidates for each row}
 \usage{
-find_candidates(dates, unit_id, incident_id, ematch, window)
+find_candidates(features, window)
 }
 \arguments{
-\item{dates}{Vector of dates}
+\item{features}{An integer matrix of features to be match (depending on
+the window).}
 
-\item{unit_id}{Integer vector of individuals' ids (to avoid matching with
-self).}
-
-\item{incident_id}{Integer vector of the corresponding incident (to avoid
-matching to the same incident).}
-
-\item{ematch}{Integer matrix of variables over which exact match is desired.}
-
-\item{window}{Integer scalar. Number of units of time to consider when
-identifying candidates (see details)}
+\item{window}{An integer vector with length equal to the number of columns
+in \code{features}.}
 }
 \value{
 A list of integer vectors (starting from zero) indicating the position of
@@ -28,11 +21,10 @@ the potential permutation.
 Find permutation candidates for each row
 }
 \details{
-For each row \code{i} in the data, a row \code{j} is a possible permutation candidate if:
+Matches (or permutation candidates) are identified depending on the rule
+specified by \code{window}. For feature \code{k}, the match between \verb{(i,j)} is possible if
 \itemize{
-\item \code{abs(date[i] - date[j]) <= window},
-\item \code{unit_id} are different,
-\item \code{incident_id} are different, and
-\item \code{all(ematch[i, ] == ematch[j,])}
+\item If \code{window[k] < 0} and \code{features[i, k] != features[j, k]}
+\item If \code{abs(features[i, k] - features[j, k]) <= window[k]}
 }
 }
