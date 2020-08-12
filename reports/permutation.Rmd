@@ -89,18 +89,33 @@ library(njforce)
 reports[, town_id  := as.integer(as.factor(town))]
 reports[, date_num := as.integer(date)]
 reports[, npointed := sum(firearm_pointed), by = "incidentid"]
+reports[, nofficers := .N, by = "incidentid"]
+reports[, exposure_i := sum(firearm_pointed) - firearm_pointed, by = incidentid]
+reports[, exposure_i := shift(exposure_i, type="lag"), by = officerid]
+
 
 x <- as.matrix(
-    subset(reports, select = c(date_num, officerid, incidentid, npointed, town_id))
-  )
-candidates <- find_candidates(
-  features    = x,
-  window      = c(15, -1, -1, 0, 0)
+  subset(reports, select = c(officerid, exposure_i, date_num, nofficers, town_id))
 )
-hist(sapply(candidates, length))
+
+candidates <- find_candidates(
+  features = x,
+  upper    = c(1e6, 1,  15, 0, 0),
+  lower    = c(1,   1, -15, 0, 0),
+  as_abs   = c(TRUE, TRUE, FALSE, FALSE, FALSE)
+)
+table(sapply(candidates[reports$nofficers > 1], length))
+
+addmargins(table(
+  sapply(candidates, length), 
+  reports$exposure_i
+))
+
 ```
 
 ```{r Def-expo-fun}
+
+
 expofun <- function() {
   reports[, exposure_i := sum(firearm_pointed) - firearm_pointed, by = "incidentid"]
   reports[, exposure_i := shift(exposure_i, type="lag"), by = "officerid"]

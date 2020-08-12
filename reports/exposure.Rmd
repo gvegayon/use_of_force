@@ -102,6 +102,7 @@ Where $T(i)$ is the set that represent the events in which $i$ was involved.
 #TBD
 ```
 
+
 ```{r exposures}
 # Identifying the first event with either pointed or discharged, we will
 # use this later.

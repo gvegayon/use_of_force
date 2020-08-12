@@ -19,8 +19,8 @@
 #' @export
 #' @useDynLib njforce, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
-find_candidates <- function(features, window) {
-    .Call(`_njforce_find_candidates`, features, window)
+find_candidates <- function(features, upper, lower, as_abs) {
+    .Call(`_njforce_find_candidates`, features, upper, lower, as_abs)
 }
 
 #' Random permutation of the data as a function of `find_candidates`

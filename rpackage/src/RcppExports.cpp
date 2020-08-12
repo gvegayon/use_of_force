@@ -6,14 +6,16 @@
 using namespace Rcpp;
 
 // find_candidates
-std::vector< std::vector<int> > find_candidates(const IntegerMatrix& features, const IntegerVector& window);
-RcppExport SEXP _njforce_find_candidates(SEXP featuresSEXP, SEXP windowSEXP) {
+std::vector< std::vector<int> > find_candidates(const IntegerMatrix& features, const IntegerVector& upper, const IntegerVector& lower, const LogicalVector& as_abs);
+RcppExport SEXP _njforce_find_candidates(SEXP featuresSEXP, SEXP upperSEXP, SEXP lowerSEXP, SEXP as_absSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const IntegerMatrix& >::type features(featuresSEXP);
-    Rcpp::traits::input_parameter< const IntegerVector& >::type window(windowSEXP);
-    rcpp_result_gen = Rcpp::wrap(find_candidates(features, window));
+    Rcpp::traits::input_parameter< const IntegerVector& >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< const LogicalVector& >::type as_abs(as_absSEXP);
+    rcpp_result_gen = Rcpp::wrap(find_candidates(features, upper, lower, as_abs));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -30,7 +32,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_njforce_find_candidates", (DL_FUNC) &_njforce_find_candidates, 2},
+    {"_njforce_find_candidates", (DL_FUNC) &_njforce_find_candidates, 4},
     {"_njforce_permute", (DL_FUNC) &_njforce_permute, 1},
     {NULL, NULL, 0}
 };

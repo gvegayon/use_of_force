@@ -4,7 +4,7 @@
 \alias{find_candidates}
 \title{Find permutation candidates for each row}
 \usage{
-find_candidates(features, window)
+find_candidates(features, upper, lower, as_abs)
 }
 \arguments{
 \item{features}{An integer matrix of features to be match (depending on

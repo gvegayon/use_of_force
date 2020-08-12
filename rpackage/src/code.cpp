@@ -3,29 +3,23 @@ using namespace Rcpp;
 
 inline bool is_within_window(
     const IntegerMatrix & x,
-    const IntegerVector & window,
+    const IntegerVector & upper,
+    const IntegerVector & lower,
+    const LogicalVector & as_abs,
     int i, int j
 ) {
 
-  // printf("Comparing (i,j)");
-  // Rcpp::print(wrap(x(i,_)));
-  // Rcpp::print(wrap(x(j,_)));
-
-  unsigned int k = window.size();
+  unsigned int k = x.ncol();
   for (unsigned int f = 0u; f < k; ++f) {
 
-    if ((window[f] < 0) && (x(i, f) == x(j, f))) { // Must be different
-      // if (i < 10 & j <= 10)
-      //   printf("(i,j): (%i, %i) differ in window[%i]\n", i, j, f);
+    int diff = x(i, f) - x(j, f);
+    if (as_abs[f])
+      diff = abs(diff);
+
+    if (diff < lower[f])
       return false;
-    } else if ((window[f] >= 0) && (abs(x(i, f) - x(j, f)) > window[f])) {
-      // if (i < 10 & j <= 10) {
-      //   printf("(i,j): (%i, %i) differ in > window[%i]\n", i, j, f);
-      //   Rcpp::print(wrap(x(i,_)));
-      //   Rcpp::print(wrap(x(j,_)));
-      // }
+    else if (diff > upper[f])
       return false;
-    }
 
   }
 
@@ -54,14 +48,20 @@ inline bool is_within_window(
 // [[Rcpp::export]]
 std::vector< std::vector<int> > find_candidates(
     const IntegerMatrix & features,
-    const IntegerVector & window
+    const IntegerVector & upper,
+    const IntegerVector & lower,
+    const LogicalVector & as_abs
 ) {
 
   unsigned int n = features.nrow();
   unsigned int k = features.ncol();
 
-  if (window.size() != k)
-    stop("The number of features does not match the length of the window vector.");
+  if (upper.size() != k)
+    stop("The number of features does not match the length of the -upper- vector.");
+  if (lower.size() != k)
+    stop("The number of features does not match the length of the -lower- vector.");
+  if (as_abs.size() != k)
+    stop("The number of features does not match the length of the -lower- vector.");
 
   std::vector< std::vector< int > > candidates(n);
 
@@ -69,9 +69,9 @@ std::vector< std::vector<int> > find_candidates(
 
     for (unsigned int j = 0u; j < i; ++j) {
 
-      if (is_within_window(features, window, i, j)) {
+      if (is_within_window(features, upper, lower, as_abs, i, j)) {
 
-        printf("Annotating (%i,%i)!\n", i, j);
+        // printf("Annotating (%i,%i)!\n", i, j);
         candidates[i].push_back(j);
         candidates[j].push_back(i);
 
