@@ -1,0 +1,224 @@
+---
+title: "Model 1"
+output: html_document
+---
+
+```{r load-data}
+library(data.table)
+
+# Reading the data and identifying individuals and their first shooting event
+njforce <- data.table::fread("data-raw/njforce_200210.csv")
+reports <- subset(
+  njforce,
+  select = c(
+    date, officerid, firearm_discharged, firearm_pointed, incidentid,
+    officer_male, officer_nyears, officer_race, officer_rank, town,
+    officer_po, officer_sleo, nsubjects, Incident_type
+    ))
+reports[, date := as.Date(date, format = "%m/%d/%Y")]
+```
+
+
+```{r exposure-i}
+reports <- reports[order(officerid, incidentid),]
+reports[, exposure_i := as.integer((sum(firearm_pointed) - firearm_pointed) > 0), by = "incidentid"]
+reports[, exposure_i := shift(exposure_i, type="lag"), by = "officerid"]
+```
+
+```{r more-features}
+# Adding other features
+reports[, female := as.integer(officer_male == 0)]
+reports[, police := as.integer(officer_po == 1)]
+reports[, sleo   := as.integer(officer_sleo == 1)]
+
+# Violent or weapon related incident
+reports[, violent_or_weapon := as.integer(grepl("armed|gun|violen|weap|shoot|knife", Incident_type))]
+
+# N officers 
+reports[, nofficers := .N, by = incidentid]
+
+# Count of incidents involving more than one (cumulative)
+reports[, prev_no_solo := nofficers > 1, by = officerid]
+reports[, prev_no_solo := shift(prev_no_solo, type = "lag", fill = FALSE), by = officerid]
+
+# Number of events (ever)
+reports[, nevent := 1:.N, by = officerid]
+reports[, nofficers := .N, by = incidentid]
+
+if (interactive()) {
+  View(
+    subset(reports, select = c(
+      officerid, incidentid, nofficers, prev_no_solo, date
+      )))
+}
+```
+
+
+# Baseline model
+
+Likelihood of pointing a firearm given the previous incident they participated they were not alone.
+
+Checking out the distribution of number of events that each officer shows (that are relevant to the dataset)
+
+```{r pre-filter}
+tmp <- reports[prev_no_solo == TRUE][, .N, by = .(firearm_pointed, officerid)]
+addmargins(table(tmp$N, tmp$firearm_pointed))
+
+# Removing officers who show up more than 4 times
+reports <- reports[!(officerid %in% tmp[N > 5, ]$officerid)]
+```
+
+```{r dist-prefilter}
+with(
+  reports[prev_no_solo == TRUE],
+  table(firearm_pointed, exposure_i)
+)
+```
+
+
+```{r baseline}
+ans0 <- glm(
+  firearm_pointed ~ 
+    exposure_i + female + police + officer_nyears + factor(town) +
+    nevent + factor(officer_race) + nofficers,
+  data = reports,
+  subset = prev_no_solo
+)
+
+ans1 <- glm(
+  firearm_pointed ~ 
+    exposure_i + female + police + officer_nyears + factor(town) +
+    nevent+ factor(officer_race) + violent_or_weapon + nofficers,
+  data = reports,
+  subset = prev_no_solo
+)
+
+ans2 <- glm(
+  firearm_pointed ~ 
+    exposure_i*female + police + officer_nyears + factor(town) +
+    nevent+ factor(officer_race) + violent_or_weapon + nofficers,
+  data = reports,
+  subset = prev_no_solo
+)
+```
+
+
+
+There are a couple of dozen officers who will show
+
+```{r re-model, cache=FALSE}
+library(lme4)
+ans_re <- glmer(
+  firearm_pointed ~ 
+    exposure_i + female + police + officer_nyears + factor(town) +
+    nevent+ factor(officer_race) + (1 | officerid) + nofficers,
+  data   = reports,
+  subset = prev_no_solo,
+  family = binomial(link="logit")
+  )
+```
+
+
+```{r baseline-table}
+texreg::screenreg(list(ans0, ans1, ans2, ans_re), stars = c(.001, .01, .05, .1))
+```
+
+# Permutation test
+
+```{r candidates}
+library(njforce)
+# reports <- reports[(nofficers == 1) & prev_no_solo,]
+x <- as.matrix(
+  subset(reports, select = c(officerid, nofficers))
+)
+
+x[, 2] <- as.integer(x[, 2] > 1)
+
+candidates <- find_candidates(
+  features = x,
+  upper    = c(0, 0),
+  lower    = c(0, 0),
+  as_abs   = c(TRUE, TRUE)
+)
+
+hist(sapply(candidates[which(reports$prev_no_solo)], length), breaks=200)
+```
+
+```{r perm-test1, cache = FALSE}
+Nperm <- 5e3
+
+# Precomputing permutations
+set.seed(144)
+permutations <- replicate(
+  Nperm, permute(candidates),
+  simplify = FALSE)
+
+# How many will change
+permutations_m <- do.call(cbind, permutations)[reports$prev_no_solo,]
+permutations_m <- sapply(apply(permutations_m, 1, unique), length)
+hist(
+  permutations_m,
+  main = "Proportion of permuted rows",
+  breaks = 50
+  )
+```
+
+```{r perm-test1-fit}
+# Baseline model
+baseline_model <- firearm_pointed ~ exposure_i * female + police +
+  officer_nyears + factor(town) + nevent + factor(officer_race) + nofficers
+
+ans_baseline <- glm(baseline_model,
+  data = reports,
+  subset = prev_no_solo
+)
+
+# Preparing the cluster
+cl <- parallel::makePSOCKcluster(4)
+parallel::clusterExport(cl, c("reports", "baseline_model"))
+invisible(parallel::clusterEvalQ(cl, library(data.table)))
+
+# Running the analysis
+ans <- parallel::parLapply(cl, permutations, function(p) {
+  
+  # Reorder the data
+  tmp <- data.table::copy(reports)
+  tmp$firearm_pointed <- tmp$firearm_pointed[p + 1]
+  
+  # environment(baseline_model) <- environment()
+  tmp <- glm(baseline_model, data = tmp, subset = prev_no_solo)
+  
+  coef(tmp)
+})
+
+# Closing the other sessions
+parallel::stopCluster(cl)
+```
+
+
+```{r report, fig.width=7, fig.height=10}
+ans <- do.call(rbind, ans)
+pvals <- rowMeans(t(ans) < coef(ans_baseline))
+pvals[] <- ifelse(pvals > .5, 1 - pvals, pvals) * 2
+ans_sd <- apply(ans, 2, sd)
+
+knitr::kable(cbind(Beta = coef(ans_baseline), pval = pvals, sd = ans_sd), digits = 4)
+```
+
+```{r dist-plot, fig.width=6, fig.height=9}
+op <- par(mar = par("mar") * c(1, 3, 1, 1))
+cols <- c("gray", "steelblue" )[(pvals <= .05) + 1]
+boxplot(
+  t(t(ans)), horizontal = TRUE, las = 1,
+  col    = cols,
+  border = cols,
+  main   = "Null distributions vs\nEstimated coefficients"
+)
+points(
+  x = coef(ans_baseline), y = 1:length(coef(ans_baseline)), pch = 4, lwd=2, col="tomato"
+  )
+abline(v=0)
+par(op)
+```
+
+
