@@ -69,9 +69,10 @@ public:
  */
 class Event {
 public:
+  int id;
   std::vector< officer* > officers;
   std::vector< bool > pointed;
-  Event() : officers(0u), pointed(0u) {};
+  Event(int id_) : id(id_), officers(0u), pointed(0u) {};
   ~Event() {};
   
   void add_officer(officer & o) {
@@ -222,7 +223,12 @@ public:
     for (auto i = 0u; i < nofficers; ++i) {
       
       officers.push_back(
-        officer(unif(params.engine) > .5, ryears(params.engine), rrates(params.engine), i)
+        officer(
+          unif(params.engine) > .5,
+          ryears(params.engine),
+          rrates(params.engine),
+          i
+      )
       );
       
     }
@@ -234,7 +240,7 @@ public:
     for (auto i = 0u; i < nevents; ++i) {
       
       // Empty event
-      Event e;
+      Event e(i);
       
       // How many first
       int event_size = std::min(noff(params.engine), nofficers);
@@ -272,6 +278,7 @@ std::vector< std::vector< double > > Simulation::get_data() {
         (double) events[i].officers[j]->id,
         (double) events[i].officers[j]->female,
         (double) events[i].officers[j]->years,
+        (double) events[i].id,
         (double) events[i].pointed[j]
       });
     }
@@ -282,27 +289,62 @@ std::vector< std::vector< double > > Simulation::get_data() {
 }
 
 
+//' Simulate Police Force Events
+//' 
+//' This function generates data similar to that featured in the paper. Events
+//' are drawn at random, as the number of officers per event. The outcome variable,
+//' whether the officer points his gun or not, is drawn sequentially as a poisson
+//' process.
+//' 
+//' @param nevents,nofficers Integers. Number of events and officers to simulate.
+//' @param min_per_event,max_per_event Integers. Lower and upper bounds for the 
+//' number of officers in the event.
+//' @param min_year,max_years Integers. Lower and upper bounds for the number
+//' of years of experience of the officers.
+//' @param min_rate,max_rate Doubles. Lower and upper bounds for the reaction
+//' rates (see details).
+//' @param female,years,rho,exposure Doubles. Parameters (coefficients) for
+//' the logistic probabilities.
+//' @param seed Integer. Seed for the pseudo-number generation.
+//' 
+//' @details
+//' The simulation process goes as follow:
+//' 1. The officers are simulated. Female ~ Bernoulli(0.5),
+//'    Action rate ~ Unif(min_rate, max_rate),
+//'    Years of experience ~ Discrete Unif[min_years, max_year]
+//' 2. Events are simulated, each event has a nofficers ~ Discrete Unif[min_per_event, max_per_event]
+//'    Once the event is done, a sequence of reaction is given by each officers'
+//'    action rate (Poisson process). Whether an officer points or not is set by
+//'    a logistic model
+//'    
+//'    point ~ female + years of experience + has any pointed? + previous exposure
+//'    
+//'    The corresponding parameters are as specified by the user. Events are simulated
+//'    one at a time.
+//' @returns
+//' 
+//' @export
 // [[Rcpp::export]]
 std::vector< std::vector< double > > simulate_njforce(
-  int nevents_,
-  int nofficers_,
-  int min_per_event_ = 1,
-  int max_per_event_ = 5,
-  int min_year_ = 0,
-  int max_year_ = 10,
-  int min_rate_ = 5,
-  int max_rate_ = 5,
-  double female_ = -.5,
-  double years_ = -.5,
-  double rho_ = 0,
-  double exposure_ = .5,
-  int seed_ = 123
+  int nevents,
+  int nofficers,
+  int min_per_event = 1,
+  int max_per_event = 5,
+  int min_year = 0,
+  int max_year = 10,
+  int min_rate = 5,
+  int max_rate = 5,
+  double female = -.5,
+  double years = -.5,
+  double rho = 0,
+  double exposure = .5,
+  int seed = 123
 ) {
   
   Simulation sim(
-      nevents_, nofficers_, min_per_event_, max_per_event_,
-      min_year_, max_year_, min_rate_, max_rate_, female_, years_, rho_,
-      exposure_, seed_
+      nevents, nofficers, min_per_event, max_per_event,
+      min_year, max_year, min_rate, max_rate, female, years, rho,
+      exposure, seed
   );
   
   return sim.get_data();
@@ -310,5 +352,10 @@ std::vector< std::vector< double > > simulate_njforce(
 }
 
 /***R
-ans <- simulate_njforce(100, 600)
+ans <- simulate_njforce(10000, 1000, rho_ = 0, exposure_ = 0)
+ans <- do.call(rbind, ans)
+colnames(ans) <- c("officerid", "female", "years", "incidentid", "pointed")
+ans <- as.data.frame(ans)
+
+summary(glm(pointed ~ -1 + female + years, data = ans, family = binomial("logit")))
 */

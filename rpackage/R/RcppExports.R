@@ -32,3 +32,42 @@ permute <- function(candidates) {
     .Call(`_njforce_permute`, candidates)
 }
 
+#' Simulate Police Force Events
+#' 
+#' This function generates data similar to that featured in the paper. Events
+#' are drawn at random, as the number of officers per event. The outcome variable,
+#' whether the officer points his gun or not, is drawn sequentially as a poisson
+#' process.
+#' 
+#' @param nevents,nofficers Integers. Number of events and officers to simulate.
+#' @param min_per_event,max_per_event Integers. Lower and upper bounds for the 
+#' number of officers in the event.
+#' @param min_year,max_years Integers. Lower and upper bounds for the number
+#' of years of experience of the officers.
+#' @param min_rate,max_rate Doubles. Lower and upper bounds for the reaction
+#' rates (see details).
+#' @param female,years,rho,exposure Doubles. Parameters (coefficients) for
+#' the logistic probabilities.
+#' @param seed Integer. Seed for the pseudo-number generation.
+#' 
+#' @details
+#' The simulation process goes as follow:
+#' 1. The officers are simulated. Female ~ Bernoulli(0.5),
+#'    Action rate ~ Unif(min_rate, max_rate),
+#'    Years of experience ~ Discrete Unif[min_years, max_year]
+#' 2. Events are simulated, each event has a nofficers ~ Discrete Unif[min_per_event, max_per_event]
+#'    Once the event is done, a sequence of reaction is given by each officers'
+#'    action rate (Poisson process). Whether an officer points or not is set by
+#'    a logistic model
+#'    
+#'    point ~ female + years of experience + has any pointed? + previous exposure
+#'    
+#'    The corresponding parameters are as specified by the user. Events are simulated
+#'    one at a time.
+#' @returns
+#' 
+#' @export
+simulate_njforce <- function(nevents, nofficers, min_per_event = 1L, max_per_event = 5L, min_year = 0L, max_year = 10L, min_rate = 5L, max_rate = 5L, female = -.5, years = -.5, rho = 0, exposure = .5, seed = 123L) {
+    .Call(`_njforce_simulate_njforce`, nevents, nofficers, min_per_event, max_per_event, min_year, max_year, min_rate, max_rate, female, years, rho, exposure, seed)
+}
+

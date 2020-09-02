@@ -30,10 +30,34 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// simulate_njforce
+std::vector< std::vector< double > > simulate_njforce(int nevents, int nofficers, int min_per_event, int max_per_event, int min_year, int max_year, int min_rate, int max_rate, double female, double years, double rho, double exposure, int seed);
+RcppExport SEXP _njforce_simulate_njforce(SEXP neventsSEXP, SEXP nofficersSEXP, SEXP min_per_eventSEXP, SEXP max_per_eventSEXP, SEXP min_yearSEXP, SEXP max_yearSEXP, SEXP min_rateSEXP, SEXP max_rateSEXP, SEXP femaleSEXP, SEXP yearsSEXP, SEXP rhoSEXP, SEXP exposureSEXP, SEXP seedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type nevents(neventsSEXP);
+    Rcpp::traits::input_parameter< int >::type nofficers(nofficersSEXP);
+    Rcpp::traits::input_parameter< int >::type min_per_event(min_per_eventSEXP);
+    Rcpp::traits::input_parameter< int >::type max_per_event(max_per_eventSEXP);
+    Rcpp::traits::input_parameter< int >::type min_year(min_yearSEXP);
+    Rcpp::traits::input_parameter< int >::type max_year(max_yearSEXP);
+    Rcpp::traits::input_parameter< int >::type min_rate(min_rateSEXP);
+    Rcpp::traits::input_parameter< int >::type max_rate(max_rateSEXP);
+    Rcpp::traits::input_parameter< double >::type female(femaleSEXP);
+    Rcpp::traits::input_parameter< double >::type years(yearsSEXP);
+    Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
+    Rcpp::traits::input_parameter< double >::type exposure(exposureSEXP);
+    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(simulate_njforce(nevents, nofficers, min_per_event, max_per_event, min_year, max_year, min_rate, max_rate, female, years, rho, exposure, seed));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_njforce_find_candidates", (DL_FUNC) &_njforce_find_candidates, 4},
     {"_njforce_permute", (DL_FUNC) &_njforce_permute, 1},
+    {"_njforce_simulate_njforce", (DL_FUNC) &_njforce_simulate_njforce, 13},
     {NULL, NULL, 0}
 };
 
