@@ -1,8 +1,13 @@
+#' This script analyzes what are the power levels of our analysis under
+#' different circumstances of data generating process.
+
 nexperiments <- 1000
 nobs         <- 700
 nperm        <- 5000
 
-datagen <- function(nobs) {
+datagen <- function(
+  nobs
+  ) {
   
   x0 <- sample(rep(c(0, 1), nobs/2))
   x1 <- rnorm(nobs)

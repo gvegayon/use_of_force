@@ -137,19 +137,31 @@ library(njforce)
 reports[, datenum := as.integer(date)]
 reports[, mult_officers := as.integer(nofficers > 1)]
 x <- as.matrix(
-  subset(reports, select = c(female, townid, mult_officers, prev_no_solo, datenum, raceid))
+  subset(
+    reports,
+    select = c(
+      officerid, female, townid, mult_officers, prev_no_solo, datenum, raceid
+      )
+    )
 )
 
 candidates <- find_candidates(
-  features = x,
+  features = x[,-1],
   upper    = c(0, 0, 0, 0, 45, 0),
   lower    = c(0, 0, 0, 0, -45, 0),
   as_abs   = c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE)
 )
 
+candidates_alt <- find_candidates(
+  features = x[, c("officerid", "mult_officers")],
+  upper    = c(0,0),
+  lower    = c(0,0),
+  as_abs   = c(TRUE, TRUE) 
+)
+
 library(magrittr)
 reports[, which(!prev_no_solo & nevents < max_n_events)] %>%
-  extract(candidates, .) %>%
+  extract(candidates_alt, .) %>%
   sapply(length) %>%
   table
 ```
@@ -160,7 +172,7 @@ Nperm <- 5000
 # Precomputing permutations
 set.seed(144)
 permutations <- replicate(
-  Nperm, permute(candidates),
+  Nperm, permute(candidates_alt),
   simplify = FALSE)
 
 # How many will change
@@ -173,14 +185,21 @@ hist(
   )
 ```
 
+
+```{r which-can-be-permuted}
+reports$has_permutations <- sapply(candidates_alt, length) > 0
+```
+
+
 ```{r perm-test1-fit}
+
 # Baseline model
 baseline_model1 <- firearm_pointed ~ exposure_i * female + police +
   officer_nyears + factor(town) + nevent + factor(officer_race) + nofficers  + firearm_pointed_prev
 
 ans_baseline1 <- glm(baseline_model1,
   data = reports,
-  subset = prev_no_solo & nevents <= max_n_events
+  subset = prev_no_solo & (nevents <= max_n_events) & has_permutations
 )
 
 # Preparing the cluster
@@ -198,7 +217,8 @@ ans_perm1 <- parallel::parLapply(cl, permutations, function(p) {
   # environment(baseline_model) <- environment()
   tmp <- glm(
     baseline_model1, data = tmp,
-    subset = prev_no_solo & nevents <= max_n_events)
+    subset = prev_no_solo (nevents <= max_n_events) & has_permutations
+    )
   
   coef(tmp)
 })
@@ -209,7 +229,7 @@ baseline_model2 <- firearm_pointed ~ exposure_i + police + female +
 
 ans_baseline2 <- glm(baseline_model2,
   data = reports,
-  subset = prev_no_solo & nevents <= max_n_events
+  subset = prev_no_solo & (nevents <= max_n_events) & has_permutations
 )
 
 parallel::clusterExport(cl, "baseline_model2")
@@ -223,7 +243,7 @@ ans_perm2 <- parallel::parLapply(cl, permutations, function(p) {
   # environment(baseline_model) <- environment()
   tmp <- glm(
     baseline_model2, data = tmp,
-    subset = prev_no_solo & nevents <= max_n_events
+    subset = prev_no_solo & (nevents <= max_n_events) & has_permutations
     )
   
   coef(tmp)
