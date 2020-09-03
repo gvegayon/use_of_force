@@ -104,7 +104,7 @@ inline void Event::point(Parameters & p) {
   std::uniform_real_distribution<> rand_unif;
 
   // Drawing the first number
-  for (auto i = 0u; i < officers.size(); ++i)
+  for (unsigned int i = 0u; i < officers.size(); ++i)
     times[i] = officers[i]->react_time(p.engine);
 
   // Getting who goes first
@@ -112,7 +112,7 @@ inline void Event::point(Parameters & p) {
 
   // Now, iterating thought the index
   int n_pointed = 0;
-  for (auto i = 0u; i < ord.size(); ++i) {
+  for (unsigned int i = 0u; i < ord.size(); ++i) {
 
     // Baseline parameters
     double val =
@@ -141,7 +141,7 @@ inline void Event::point(Parameters & p) {
 
   // Updating the officer's history
   bool multiple = officers.size() > 1u;
-  for (auto i = 0u; i < officers.size(); ++i) {
+  for (unsigned int i = 0u; i < officers.size(); ++i) {
     officers[i]->previous_mult.push_back(multiple);
 
     // Only exposed if I was not the one who pointed
@@ -189,14 +189,14 @@ public:
 class Simulation {
 public:
 
-  int nevents;
-  int nofficers;
-  int min_per_event;
-  int max_per_event;
-  int min_year;
-  int max_year;
-  int min_rate;
-  int max_rate;
+  unsigned int nevents;
+  unsigned int nofficers;
+  unsigned int min_per_event;
+  unsigned int max_per_event;
+  unsigned int min_year;
+  unsigned int max_year;
+  unsigned int min_rate;
+  unsigned int max_rate;
   Parameters params;
 
   Events events;
@@ -210,20 +210,20 @@ public:
     double rho_,
     double exposure_,
     int seed_
-  ) : events(events_), officers(officers_), params(female_, years_, rho_, exposure_) {
+  ) : params(female_, years_, rho_, exposure_), events(events_), officers(officers_) {
     params.seed(seed_);
     return;
   }
 
   Simulation(
-    int nevents_,
-    int nofficers_,
-    int min_per_event_,
-    int max_per_event_,
-    int min_year_,
-    int max_year_,
-    int min_rate_,
-    int max_rate_,
+    unsigned int nevents_,
+    unsigned int nofficers_,
+    unsigned int min_per_event_,
+    unsigned int max_per_event_,
+    unsigned int min_year_,
+    unsigned int max_year_,
+    unsigned int min_rate_,
+    unsigned int max_rate_,
     double female_,
     double years_,
     double rho_,
@@ -242,7 +242,7 @@ public:
     std::uniform_real_distribution<> rrates(min_rate, max_rate);
 
     // Generating the officers
-    for (auto i = 0u; i < nofficers; ++i) {
+    for (unsigned int i = 0u; i < nofficers; ++i) {
 
       officers.push_back(
         officer(
@@ -259,19 +259,19 @@ public:
     std::uniform_int_distribution<> rid(0, nofficers - 1);
 
     // Generating the events
-    for (auto i = 0u; i < nevents; ++i) {
+    for (unsigned int i = 0u; i < nevents; ++i) {
 
       // Empty event
       Event e(i);
 
       // How many first
-      int event_size = std::min(noff(params.engine), nofficers);
+      int event_size = std::min(noff(params.engine), (int) nofficers);
 
       // Sampling
       int ntries = 0;
-      while (event_size > 0 & ++ntries < 1000) {
+      while ((event_size > 0) & (++ntries < 1000)) {
         int proposed_officer = rid(params.engine);
-        for (auto j = 0; j < e.size(); ++j) {
+        for (unsigned int j = 0u; j < e.size(); ++j) {
           if (proposed_officer == e.officers[j]->id)
             continue;
         }
@@ -300,8 +300,8 @@ std::vector< std::vector< double > > Simulation::get_data() {
 
   // Writing the reports
   std::vector< std::vector<double> > ans;
-  for (auto i = 0u; i < nevents; ++i) {
-    for (auto j = 0u; j < events[i].size(); ++j) {
+  for (unsigned int i = 0u; i < nevents; ++i) {
+    for (unsigned int j = 0u; j < events[i].size(); ++j) {
       ans.push_back({
         (double) events[i].officers[j]->id,
         (double) events[i].officers[j]->female,
@@ -313,6 +313,39 @@ std::vector< std::vector< double > > Simulation::get_data() {
   }
 
   return ans;
+
+}
+
+inline DataFrame list2df(
+  std::vector< std::vector< double > > L
+) {
+
+  int nrows = L.size();
+
+  // Getting each column
+  IntegerVector officerid(nrows);
+  IntegerVector female(nrows);
+  IntegerVector years(nrows);
+  IntegerVector incidentid(nrows);
+  IntegerVector pointed(nrows);
+
+  for (int i = 0; i < nrows; ++i) {
+
+    officerid[i] = L[i][0];
+    female[i] = L[i][1];
+    years[i] = L[i][2];
+    incidentid[i] = L[i][3];
+    pointed[i] = L[i][4];
+
+  }
+
+  return DataFrame::create(
+    _["officerid"] = officerid,
+    _["female"] = female,
+    _["years"] = years,
+    _["incidentid"] = incidentid,
+    _["pointed"] = pointed
+  );
 
 }
 
@@ -349,16 +382,19 @@ std::vector< std::vector< double > > Simulation::get_data() {
 //'    The corresponding parameters are as specified by the user. Events are simulated
 //'    one at a time.
 //' @returns
-//' A list of double vectors each with:
+//' A data frame with the following columns
 //' - Officer id
 //' - Whether the officer is female
 //' - Years of experience
 //' - Incident id
 //' - Whether the officer pointed a gun
-//' The length of the list equals the number of reports.
+//'
+//' Each row represents one report per officer involved in the event.
 //' @export
+//' @examples
+//' x <- simulate_njforce(1000, 400)
 // [[Rcpp::export]]
-std::vector< std::vector< double > > simulate_njforce(
+DataFrame simulate_njforce(
   int nevents,
   int nofficers,
   int min_per_event = 1,
@@ -384,7 +420,7 @@ std::vector< std::vector< double > > simulate_njforce(
   // Running the simulation
   sim.run();
 
-  return sim.get_data();
+  return list2df(sim.get_data());
 
 }
 
@@ -399,7 +435,7 @@ std::vector< std::vector< double > > simulate_njforce(
 //' In the case of `simulate_njforce2`, the user can pass predefined events and
 //' officers and use those to simulate each officers' reactions.
 // [[Rcpp::export(rng = false)]]
-std::vector< std::vector< double > > simulate_njforce2(
+DataFrame simulate_njforce2(
   std::vector< int > incidentid,
   std::vector< int > officerid,
   std::vector< bool > female,
@@ -456,7 +492,7 @@ std::vector< std::vector< double > > simulate_njforce2(
   // Running the simulation
   sim.run();
 
-  return sim.get_data();
+  return list2df(sim.get_data());
 
 }
 

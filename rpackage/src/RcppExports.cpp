@@ -31,7 +31,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // simulate_njforce
-std::vector< std::vector< double > > simulate_njforce(int nevents, int nofficers, int min_per_event, int max_per_event, int min_year, int max_year, int min_rate, int max_rate, double female_par, double years_par, double rho_par, double exposure_par, int seed);
+DataFrame simulate_njforce(int nevents, int nofficers, int min_per_event, int max_per_event, int min_year, int max_year, int min_rate, int max_rate, double female_par, double years_par, double rho_par, double exposure_par, int seed);
 RcppExport SEXP _njforce_simulate_njforce(SEXP neventsSEXP, SEXP nofficersSEXP, SEXP min_per_eventSEXP, SEXP max_per_eventSEXP, SEXP min_yearSEXP, SEXP max_yearSEXP, SEXP min_rateSEXP, SEXP max_rateSEXP, SEXP female_parSEXP, SEXP years_parSEXP, SEXP rho_parSEXP, SEXP exposure_parSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -54,7 +54,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // simulate_njforce2
-std::vector< std::vector< double > > simulate_njforce2(std::vector< int > incidentid, std::vector< int > officerid, std::vector< bool > female, std::vector< int > years, double female_par, double years_par, double rho_par, double exposure_par, int seed);
+DataFrame simulate_njforce2(std::vector< int > incidentid, std::vector< int > officerid, std::vector< bool > female, std::vector< int > years, double female_par, double years_par, double rho_par, double exposure_par, int seed);
 RcppExport SEXP _njforce_simulate_njforce2(SEXP incidentidSEXP, SEXP officeridSEXP, SEXP femaleSEXP, SEXP yearsSEXP, SEXP female_parSEXP, SEXP years_parSEXP, SEXP rho_parSEXP, SEXP exposure_parSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

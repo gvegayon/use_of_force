@@ -65,14 +65,17 @@ permute <- function(candidates) {
 #'    The corresponding parameters are as specified by the user. Events are simulated
 #'    one at a time.
 #' @returns
-#' A list of double vectors each with:
+#' A data frame with the following columns
 #' - Officer id
 #' - Whether the officer is female
 #' - Years of experience
 #' - Incident id
 #' - Whether the officer pointed a gun
-#' The length of the list equals the number of reports.
+#'
+#' Each row represents one report per officer involved in the event.
 #' @export
+#' @examples
+#' x <- simulate_njforce(1000, 400)
 simulate_njforce <- function(nevents, nofficers, min_per_event = 1L, max_per_event = 5L, min_year = 0L, max_year = 10L, min_rate = 5L, max_rate = 5L, female_par = -.5, years_par = -.5, rho_par = 0, exposure_par = .5, seed = 123L) {
     .Call(`_njforce_simulate_njforce`, nevents, nofficers, min_per_event, max_per_event, min_year, max_year, min_rate, max_rate, female_par, years_par, rho_par, exposure_par, seed)
 }

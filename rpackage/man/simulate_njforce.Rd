@@ -57,15 +57,16 @@ officer id.}
 of the officers.}
 }
 \value{
-A list of double vectors each with:
+A data frame with the following columns
 \itemize{
 \item Officer id
 \item Whether the officer is female
 \item Years of experience
 \item Incident id
 \item Whether the officer pointed a gun
-The length of the list equals the number of reports.
 }
+
+Each row represents one report per officer involved in the event.
 }
 \description{
 This function generates data similar to that featured in the paper. Events
@@ -92,4 +93,7 @@ one at a time.
 
 In the case of \code{simulate_njforce2}, the user can pass predefined events and
 officers and use those to simulate each officers' reactions.
+}
+\examples{
+x <- simulate_njforce(1000, 400)
 }
