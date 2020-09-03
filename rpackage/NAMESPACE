@@ -3,5 +3,6 @@
 export(find_candidates)
 export(permute)
 export(simulate_njforce)
+export(simulate_njforce2)
 importFrom(Rcpp,sourceCpp)
 useDynLib(njforce, .registration = TRUE)

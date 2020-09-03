@@ -2,6 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{simulate_njforce}
 \alias{simulate_njforce}
+\alias{simulate_njforce2}
 \title{Simulate Police Force Events}
 \usage{
 simulate_njforce(
@@ -13,11 +14,23 @@ simulate_njforce(
   max_year = 10L,
   min_rate = 5L,
   max_rate = 5L,
-  female = -0.5,
-  years = -0.5,
-  rho = 0,
-  exposure = 0.5,
+  female_par = -0.5,
+  years_par = -0.5,
+  rho_par = 0,
+  exposure_par = 0.5,
   seed = 123L
+)
+
+simulate_njforce2(
+  incidentid,
+  officerid,
+  female,
+  years,
+  female_par,
+  years_par,
+  rho_par,
+  exposure_par,
+  seed
 )
 }
 \arguments{
@@ -32,13 +45,27 @@ of years of experience of the officers.}
 \item{min_rate, max_rate}{Doubles. Lower and upper bounds for the reaction
 rates (see details).}
 
-\item{female, years, rho, exposure}{Doubles. Parameters (coefficients) for
+\item{female_par, years_par, rho_par, exposure_par}{Doubles. Parameters (coefficients) for
 the logistic probabilities.}
 
 \item{seed}{Integer. Seed for the pseudo-number generation.}
+
+\item{incidentid, officerid}{Integer vectors. Values for the incident and
+officer id.}
+
+\item{female, years}{Logical and integer vectors, respectively. Features
+of the officers.}
 }
 \value{
-
+A list of double vectors each with:
+\itemize{
+\item Officer id
+\item Whether the officer is female
+\item Years of experience
+\item Incident id
+\item Whether the officer pointed a gun
+The length of the list equals the number of reports.
+}
 }
 \description{
 This function generates data similar to that featured in the paper. Events
@@ -62,4 +89,7 @@ point ~ female + years of experience + has any pointed? + previous exposure
 The corresponding parameters are as specified by the user. Events are simulated
 one at a time.
 }
+
+In the case of \code{simulate_njforce2}, the user can pass predefined events and
+officers and use those to simulate each officers' reactions.
 }
