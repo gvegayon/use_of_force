@@ -40,7 +40,7 @@ public:
  * @param rate a speed at which they will react (initiative). Reaction time is
  * a poisson process.
  */
-class officer {
+class Officer {
 
 public:
   bool female;
@@ -52,7 +52,14 @@ public:
 
   std::exponential_distribution<> react_time;
 
-  officer(bool female_, int years_, double rate_, int id_) :
+  Officer() : female(true), years(0), rate(1.0), id(-1),
+    previous_mult(0u), previous_expo(0u) {
+
+    react_time = std::exponential_distribution<>(rate);
+
+  };
+
+  Officer(bool female_, int years_, double rate_, int id_) :
     female(female_), years(years_), rate(rate_), id(id_),
     previous_mult(0u), previous_expo(0u) {
 
@@ -60,17 +67,42 @@ public:
     react_time = std::exponential_distribution<>(rate);
 
   };
-  ~officer() {};
+  ~Officer() {};
 
   void reset();
 
 };
 
-inline void officer::reset() {
+inline void Officer::reset() {
   previous_mult.clear();
   previous_expo.clear();
   return;
 }
+
+class Officers {
+public:
+  std::vector< Officer* > dat;
+  std::vector< unsigned int > to_delete;
+  Officers(): dat(0u) {};
+
+  ~Officers() {
+    for (auto iter = to_delete.begin(); iter != to_delete.end(); ++iter)
+      delete dat[*iter];
+    return;
+  }
+
+  void add(bool female_, int years_, double rate_, int id_) {
+    dat.push_back(new Officer(female_, years_, rate_, id_));
+    to_delete.push_back(dat.size() - 1u);
+    return;
+  }
+
+  Officer * operator[](unsigned int i) {
+    return dat[i];
+  }
+
+  unsigned int size() const {return dat.size();};
+};
 
 /**The actual event. Has multiple officers. Their reactions are a function
  * of the model parameters.
@@ -78,13 +110,19 @@ inline void officer::reset() {
 class Event {
 public:
   int id;
-  std::vector< officer* > officers;
+  std::vector< Officer* > officers;
   std::vector< bool > pointed;
-  Event(int id_) : id(id_), officers(0u), pointed(0u) {};
-  ~Event() {};
 
-  void add_officer(officer & o) {
-    officers.push_back(&o);
+  Event() : id(-1), officers(0u), pointed(0u) {};
+  Event(int id_) : id(id_), officers(0u), pointed(0u) {};
+
+  ~Event() {
+    for (int i = 0; i < officers.size(); ++i)
+      officers[i] = nullptr;
+  };
+
+  void add_officer(Officer * o) {
+    officers.push_back(o);
     pointed.push_back(false);
     return;
   }
@@ -104,8 +142,9 @@ inline void Event::point(Parameters & p) {
   std::uniform_real_distribution<> rand_unif;
 
   // Drawing the first number
-  for (unsigned int i = 0u; i < officers.size(); ++i)
+  for (unsigned int i = 0u; i < officers.size(); ++i) {
     times[i] = officers[i]->react_time(p.engine);
+  }
 
   // Getting who goes first
   std::vector< size_t > ord = sort_indexes(times);
@@ -120,9 +159,8 @@ inline void Event::point(Parameters & p) {
       officers[i]->years  * p.years;
 
     // Prev Exposure effect?
-    // std::cout << "Printing " << officers[i]->previous_expo.size() << std::endl;
-    if (officers[i]->previous_mult.size() > 0) {
-      if (officers[i]->previous_expo[officers[i]->previous_expo.size()])
+    if (officers[i]->previous_expo.size() > 0) {
+      if (officers[i]->previous_expo[officers[i]->previous_expo.size() - 1])
         val += p.exposure;
 
     }
@@ -163,22 +201,34 @@ inline void Event::point(Parameters & p) {
 class Events {
 public:
 
-  std::vector< Event > dat;
+  std::vector< Event * > dat;
+  std::vector< unsigned int > to_delete;
 
   Events() {};
-  ~Events() {};
+  ~Events() {
+    for (auto iter = to_delete.begin(); iter != to_delete.end(); ++iter)
+      delete dat[*iter];
+  };
 
-  void add_event(Event e) {
-    dat.push_back(e);
+  void add_event(Event & e) {
+    dat.push_back(&e);
     return;
   }
 
-  void run(Parameters & params) {
-    for (auto iter = dat.begin(); iter != dat.end(); ++iter)
-      iter->point(params);
+  void add_event(int i) {
+    dat.emplace_back(new Event(i));
+    to_delete.push_back(dat.size() - 1);
+    return;
   }
 
-  Event & operator[](int i) {
+
+  void run(Parameters & params) {
+    for (unsigned int i = 0u; i < dat.size(); ++i) {
+      dat[i]->point(params);
+    }
+  }
+
+  Event * & operator[](int i) {
     return dat[i];
   }
 
@@ -200,19 +250,61 @@ public:
   Parameters params;
 
   Events events;
-  std::vector< officer > officers;
+  Officers officers;
 
   Simulation(
-    Events & events_,
-    std::vector< officer > & officers_,
+    std::vector< int > eventid,
+    std::vector< int > officerid,
+    std::vector< bool > female,
+    std::vector< int > years,
     double female_,
     double years_,
     double rho_,
     double exposure_,
     int seed_
-  ) : params(female_, years_, rho_, exposure_), events(events_), officers(officers_) {
+  ) : params(female_, years_, rho_, exposure_) {
     params.seed(seed_);
+
+    // Creating a map
+    std::unordered_map<int, int> officer_map;
+    std::unordered_map<int, int> event_map;
+
+    for (unsigned int i = 0u; i < eventid.size(); ++i) {
+
+      // Does the officer exists
+      auto officer_loc = officer_map.find(officerid[i]);
+      int officer_idx = 0;
+      if (officer_loc == officer_map.end()) {
+
+        officer_map[officerid[i]] = officers.size();
+        officers.add(female[i], years[i], 1.0, officerid[i]);
+        officer_idx = officers.size() - 1;
+
+      } else
+        officer_idx = officer_loc->second;
+
+      // Does the event exists?
+      auto event_loc = event_map.find(eventid[i]);
+      int event_idx = 0;
+      if (event_loc == event_map.end()) {
+
+        event_map[eventid[i]] = events.size();
+        events.add_event(eventid[i]);
+        event_idx = events.size() - 1;
+
+      } else
+        event_idx = event_loc->second;
+
+      // Adding the officer to the event
+      events.dat[event_idx]->add_officer(officers[officer_idx]);
+
+    }
+
+    nevents = events.size();
+    nofficers = officers.size();
+
     return;
+
   }
 
   Simulation(
@@ -244,13 +336,11 @@ public:
     // Generating the officers
     for (unsigned int i = 0u; i < nofficers; ++i) {
 
-      officers.push_back(
-        officer(
+      officers.add(
           unif(params.engine) > .5,
           ryears(params.engine),
           rrates(params.engine),
           i
-      )
       );
 
     }
@@ -262,7 +352,7 @@ public:
     for (unsigned int i = 0u; i < nevents; ++i) {
 
       // Empty event
-      Event e(i);
+      events.add_event(i);
 
       // How many first
       int event_size = std::min(noff(params.engine), (int) nofficers);
@@ -271,17 +361,15 @@ public:
       int ntries = 0;
       while ((event_size > 0) & (++ntries < 1000)) {
         int proposed_officer = rid(params.engine);
-        for (unsigned int j = 0u; j < e.size(); ++j) {
-          if (proposed_officer == e.officers[j]->id)
+        for (unsigned int j = 0u; j < events[i]->size(); ++j) {
+          if (proposed_officer == events[i]->officers[j]->id)
             continue;
         }
-        e.add_officer(officers[proposed_officer]);
+        events[i]->add_officer(officers[proposed_officer]);
         event_size--;
 
       }
 
-      // Adding the event and computing what happens
-      events.add_event(e);
     }
 
     return;
@@ -301,13 +389,13 @@ std::vector< std::vector< double > > Simulation::get_data() {
   // Writing the reports
   std::vector< std::vector<double> > ans;
   for (unsigned int i = 0u; i < nevents; ++i) {
-    for (unsigned int j = 0u; j < events[i].size(); ++j) {
+    for (unsigned int j = 0u; j < events[i]->size(); ++j) {
       ans.push_back({
-        (double) events[i].officers[j]->id,
-        (double) events[i].officers[j]->female,
-        (double) events[i].officers[j]->years,
-        (double) events[i].id,
-        (double) events[i].pointed[j]
+        (double) events[i]->officers[j]->id,
+        (double) events[i]->officers[j]->female,
+        (double) events[i]->officers[j]->years,
+        (double) events[i]->id,
+        (double) events[i]->pointed[j]
       });
     }
   }
@@ -331,20 +419,20 @@ inline DataFrame list2df(
 
   for (int i = 0; i < nrows; ++i) {
 
-    officerid[i] = L[i][0];
-    female[i] = L[i][1];
-    years[i] = L[i][2];
+    officerid[i]  = L[i][0];
+    female[i]     = L[i][1];
+    years[i]      = L[i][2];
     incidentid[i] = L[i][3];
-    pointed[i] = L[i][4];
+    pointed[i]    = L[i][4];
 
   }
 
   return DataFrame::create(
-    _["officerid"] = officerid,
-    _["female"] = female,
-    _["years"] = years,
+    _["officerid"]  = officerid,
+    _["female"]     = female,
+    _["years"]      = years,
     _["incidentid"] = incidentid,
-    _["pointed"] = pointed
+    _["pointed"]    = pointed
   );
 
 }
@@ -447,46 +535,10 @@ DataFrame simulate_njforce2(
   int seed
 ) {
 
-  // Creating a map
-  std::unordered_map<int, int> officer_map;
-  std::unordered_map<int, int> event_map;
-
-  Events E;
-  std::vector< officer > officers;
-  for (unsigned int i = 0u; i < incidentid.size(); ++i) {
-
-    // Does the officer exists
-    auto officer_loc = officer_map.find(officerid[i]);
-    int officer_idx = 0;
-    if (officer_loc == officer_map.end()) {
-
-      officer_map[officerid[i]] = officers.size();
-      officers.push_back(officer(female[i], years[i], 1.0, officerid[i]));
-      officer_idx = officers.size() - 1;
-
-    } else
-      officer_idx = officer_loc->second;
-
-    // Does the event exists?
-    auto event_loc = event_map.find(incidentid[i]);
-    int event_idx = 0;
-    if (event_loc != event_map.end()) {
-
-      event_map[incidentid[i]] = E.size();
-      E.add_event(Event(incidentid[i]));
-      event_idx = E.size() - 1;
-
-    } else
-      event_idx = event_loc->second;
-
-    // Adding the officer to the event
-    E.dat[event_idx].add_officer(officers[officer_idx]);
-
-  }
-
   // Creating the simulation object
   Simulation sim(
-      E, officers, female_par, years_par, rho_par, exposure_par, seed
+      incidentid, officerid, female, years, female_par, years_par, rho_par,
+      exposure_par, seed
     );
 
   // Running the simulation
