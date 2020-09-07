@@ -29,20 +29,22 @@ public:
   double years;
   double rho;
   double exposure;
+  double context;
   std::mt19937 engine;
   std::uniform_real_distribution<> rand_unif;
   std::normal_distribution<> rand_normal;
 
-  Parameters(double female_, double years_, double rho_, double exposure_) :
-    female(female_), years(years_), rho(rho_), exposure(exposure_) {};
+  Parameters(double female_, double years_, double rho_, double exposure_, double context_) :
+    female(female_), years(years_), rho(rho_), exposure(exposure_), context(context_){};
 
   void seed(int s) {engine.seed(s);};
 
-  void set_par(double female_, double years_, double rho_, double exposure_) {
+  void set_par(double female_, double years_, double rho_, double exposure_, double context_) {
     female   = female_;
     years    = years_;
     rho      = rho_;
     exposure = exposure_;
+    context  = context_;
     return;
   }
 };
@@ -125,10 +127,11 @@ public:
   Vec< Officer* > officers;
   Vec< bool > pointed;
   Vec< double > years;
+  Vec< double > response_time;
   double violence_level;
 
-  Event() : id(-1), officers(0u), pointed(0u), years(0u) {};
-  Event(int id_) : id(id_), officers(0u), pointed(0u), years(0u) {};
+  Event() : id(-1), officers(0u), pointed(0u), years(0u), response_time(0u) {};
+  Event(int id_) : id(id_), officers(0u), pointed(0u), years(0u), response_time(0u) {};
 
   ~Event() {
     for (int i = 0; i < officers.size(); ++i)
@@ -142,6 +145,7 @@ public:
     else
       years.push_back(years_);
 
+    response_time.push_back(0);
     pointed.push_back(false);
     return;
   }
@@ -154,19 +158,17 @@ public:
 inline void Event::point(Parameters & p) {
 
   // An indicator vector telling whether the officer reacted
-  Vec< double > times(officers.size(), 0.0);
-  Vec< int > order(times.size(), 0);
+  Vec< int > order(this->size(), 0);
 
   // Figuring out the level of violence
   violence_level = p.rand_normal(p.engine);
 
   // Drawing the first number
-  for (unsigned int i = 0u; i < officers.size(); ++i) {
-    times[i] = officers[i]->react_time(p.engine);
-  }
+  for (unsigned int i = 0u; i < officers.size(); ++i)
+    response_time[i] = officers[i]->react_time(p.engine);
 
   // Getting who goes first
-  Vec< size_t > ord = sort_indexes(times);
+  Vec< size_t > ord = sort_indexes(response_time);
 
   // Now, iterating thought the index
   int n_pointed = 0;
@@ -175,8 +177,8 @@ inline void Event::point(Parameters & p) {
     // Baseline parameters
     double val =
       officers[i]->female * p.female +
-      years[i]  * p.years +
-      violence_level;
+      years[i]            * p.years +
+      violence_level      * p.context;
 
     // Prev Exposure effect?
     if (officers[i]->previous_expo.size() > 0) {
@@ -282,6 +284,7 @@ public:
     double years_,
     double rho_,
     double exposure_,
+    double context_,
     int seed_
   );
 
@@ -298,6 +301,7 @@ public:
     double years_,
     double rho_,
     double exposure_,
+    double context_,
     int seed_
   );
 
@@ -318,9 +322,10 @@ public:
     double female,
     double years,
     double rho,
-    double exposure
+    double exposure,
+    double context
   ) {
-    params.set_par(female, years, rho, exposure);
+    params.set_par(female, years, rho, exposure, context);
     this->run(true);
     return;
   }
@@ -338,8 +343,9 @@ inline Simulation::Simulation(
     double years_,
     double rho_,
     double exposure_,
+    double context_,
     int seed_
-) : params(female_, years_, rho_, exposure_) {
+) : params(female_, years_, rho_, exposure_, context_) {
   params.seed(seed_);
 
   // Creating a map
@@ -400,11 +406,12 @@ inline Simulation::Simulation(
     double years_,
     double rho_,
     double exposure_,
+    double context_,
     int seed_
 ) : nevents(nevents_), nofficers(nofficers_), min_per_event(min_per_event_),
 max_per_event(max_per_event_), min_year(min_year_), max_year(max_year_),
 min_rate(min_rate_), max_rate(max_rate_),
-params(female_, years_, rho_, exposure_) {
+params(female_, years_, rho_, exposure_, context_) {
 
   // Setting up the seed and random numbers;
   params.seed(seed_);
@@ -476,7 +483,7 @@ Vec< Vec< double > > Simulation::get_data(bool byrow) {
     }
   } else {
 
-    ans.resize(6u);
+    ans.resize(7u);
 
     for (unsigned int i = 0u; i < nevents; ++i) {
       for (unsigned int j = 0u; j < events[i]->size(); ++j) {
@@ -486,7 +493,8 @@ Vec< Vec< double > > Simulation::get_data(bool byrow) {
         ans[2u].push_back((double) events[i]->years[j]);
         ans[3u].push_back((double) events[i]->id);
         ans[4u].push_back((double) events[i]->violence_level);
-        ans[4u].push_back((double) events[i]->pointed[j]);
+        ans[5u].push_back((double) events[i]->response_time[j]);
+        ans[6u].push_back((double) events[i]->pointed[j]);
 
       }
     }
@@ -568,6 +576,7 @@ std::vector< std::vector< double > > sim_events(
   double years_par = -.5,
   double rho_par = 0,
   double exposure_par = .5,
+  double context_par = 1.0,
   int nsims = 1,
   int seed = 123
 ) {
@@ -576,7 +585,7 @@ std::vector< std::vector< double > > sim_events(
   Simulation sim(
       nevents, nofficers, min_per_event, max_per_event,
       min_year, max_year, min_rate, max_rate, female_par, years_par, rho_par,
-      exposure_par, seed
+      exposure_par, context_par, seed
   );
 
   // Running the simulation
@@ -606,6 +615,7 @@ std::vector<std::vector<double>> sim_events2(
   double years_par,
   double rho_par,
   double exposure_par,
+  double context_par,
   int nsims,
   int seed
 ) {
@@ -613,7 +623,7 @@ std::vector<std::vector<double>> sim_events2(
   // Creating the simulation object
   Simulation sim(
       incidentid, officerid, female, years, female_par, years_par, rho_par,
-      exposure_par, seed
+      exposure_par, context_par, seed
     );
 
   // Running the simulation

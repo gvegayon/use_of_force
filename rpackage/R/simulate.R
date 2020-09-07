@@ -55,6 +55,7 @@ sim_events <- function(
   years_par     = -.5,
   rho_par       = 0,
   exposure_par  = .5,
+  context_par   = 1,
   nsims         = 1,
   seed          = sample.int(.Machine$integer.max, 1)
 ) {
@@ -72,6 +73,7 @@ sim_events <- function(
     years_par,
     rho_par,
     exposure_par,
+    context_par,
     nsims,
     seed
   )
@@ -83,6 +85,7 @@ sim_events <- function(
     "years",
     "incidentid",
     "violence_level",
+    "response_time",
     sprintf("pointed%06i", 1:nsims)
   )
 
@@ -110,6 +113,7 @@ sim_events2 <- function(
   years_par    = .-5,
   rho_par      = .5,
   exposure_par = .5,
+  context_par  = 1,
   nsims        = 1,
   seed         = sample.int(.Machine$integer.max, 1)
 ) {
@@ -127,6 +131,7 @@ sim_events2 <- function(
     years_par,
     rho_par,
     exposure_par,
+    context_par,
     nsims,
     seed
   )
@@ -138,6 +143,7 @@ sim_events2 <- function(
     "years",
     "incidentid",
     "violence_level",
+    "response_time",
     sprintf("pointed%06i", 1:nsims)
   )
 
