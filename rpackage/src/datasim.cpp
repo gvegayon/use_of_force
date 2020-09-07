@@ -30,6 +30,8 @@ public:
   double rho;
   double exposure;
   std::mt19937 engine;
+  std::uniform_real_distribution<> rand_unif;
+  std::normal_distribution<> rand_normal;
 
   Parameters(double female_, double years_, double rho_, double exposure_) :
     female(female_), years(years_), rho(rho_), exposure(exposure_) {};
@@ -123,6 +125,7 @@ public:
   Vec< Officer* > officers;
   Vec< bool > pointed;
   Vec< double > years;
+  double violence_level;
 
   Event() : id(-1), officers(0u), pointed(0u), years(0u) {};
   Event(int id_) : id(id_), officers(0u), pointed(0u), years(0u) {};
@@ -154,8 +157,8 @@ inline void Event::point(Parameters & p) {
   Vec< double > times(officers.size(), 0.0);
   Vec< int > order(times.size(), 0);
 
-  // Uniform between 0 and 1
-  std::uniform_real_distribution<> rand_unif;
+  // Figuring out the level of violence
+  violence_level = p.rand_normal(p.engine);
 
   // Drawing the first number
   for (unsigned int i = 0u; i < officers.size(); ++i) {
@@ -172,7 +175,8 @@ inline void Event::point(Parameters & p) {
     // Baseline parameters
     double val =
       officers[i]->female * p.female +
-      years[i]  * p.years;
+      years[i]  * p.years +
+      violence_level;
 
     // Prev Exposure effect?
     if (officers[i]->previous_expo.size() > 0) {
@@ -186,7 +190,7 @@ inline void Event::point(Parameters & p) {
       val += p.rho;
 
     // Will the officer point?
-    if (rand_unif(p.engine) < (exp(val)/(1 + exp(val)))) {
+    if (p.rand_unif(p.engine) < (exp(val)/(1 + exp(val)))) {
       pointed[i] = true;
       n_pointed++;
     } else
@@ -465,13 +469,14 @@ Vec< Vec< double > > Simulation::get_data(bool byrow) {
           (double) events[i]->officers[j]->female,
           (double) events[i]->years[j],
           (double) events[i]->id,
+          (double) events[i]->violence_level,
           (double) events[i]->pointed[j]
         });
       }
     }
   } else {
 
-    ans.resize(5u);
+    ans.resize(6u);
 
     for (unsigned int i = 0u; i < nevents; ++i) {
       for (unsigned int j = 0u; j < events[i]->size(); ++j) {
@@ -480,6 +485,7 @@ Vec< Vec< double > > Simulation::get_data(bool byrow) {
         ans[1u].push_back((double) events[i]->officers[j]->female);
         ans[2u].push_back((double) events[i]->years[j]);
         ans[3u].push_back((double) events[i]->id);
+        ans[4u].push_back((double) events[i]->violence_level);
         ans[4u].push_back((double) events[i]->pointed[j]);
 
       }
@@ -502,38 +508,7 @@ inline Vec< double > Simulation::get_response() {
 
 }
 
-inline DataFrame list2df(
-  Vec< Vec< double > > L
-) {
 
-  int nrows = L.size();
-
-  // Getting each column
-  IntegerVector officerid(nrows);
-  IntegerVector female(nrows);
-  IntegerVector years(nrows);
-  IntegerVector incidentid(nrows);
-  IntegerVector pointed(nrows);
-
-  for (int i = 0; i < nrows; ++i) {
-
-    officerid[i]  = L[i][0];
-    female[i]     = L[i][1];
-    years[i]      = L[i][2];
-    incidentid[i] = L[i][3];
-    pointed[i]    = L[i][4];
-
-  }
-
-  return DataFrame::create(
-    _["officerid"]  = officerid,
-    _["female"]     = female,
-    _["years"]      = years,
-    _["incidentid"] = incidentid,
-    _["pointed"]    = pointed
-  );
-
-}
 
 // Simulate Police Force Events
 //
