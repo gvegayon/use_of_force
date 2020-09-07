@@ -42,6 +42,6 @@ library(magrittr)
 (ans[,-5] == reports[,list(officerid, 1 - officer_male, floor(officer_nyears), incidentid)]) %>%
   apply(2, sum)
 
-reports[, list(range(officer_nyears)), by = officerid]
+hist(reports[, list(diff(range(officer_nyears))), by = officerid][,2][[1]])
 
-range(reports$date, na.rm = TRUE)
+  range(reports$date, na.rm = TRUE)
