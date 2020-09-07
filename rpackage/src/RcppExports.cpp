@@ -31,8 +31,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // sim_events
-std::vector< std::vector< double > > sim_events(int nevents, int nofficers, int min_per_event, int max_per_event, int min_year, int max_year, int min_rate, int max_rate, double female_par, double years_par, double rho_par, double exposure_par, double context_par, int nsims, int seed);
-RcppExport SEXP _njforce_sim_events(SEXP neventsSEXP, SEXP nofficersSEXP, SEXP min_per_eventSEXP, SEXP max_per_eventSEXP, SEXP min_yearSEXP, SEXP max_yearSEXP, SEXP min_rateSEXP, SEXP max_rateSEXP, SEXP female_parSEXP, SEXP years_parSEXP, SEXP rho_parSEXP, SEXP exposure_parSEXP, SEXP context_parSEXP, SEXP nsimsSEXP, SEXP seedSEXP) {
+std::vector< std::vector< double > > sim_events(int nevents, int nofficers, int min_per_event, int max_per_event, int min_year, int max_year, int min_rate, int max_rate, double female_par, double years_par, double rho_par, double exposure_par, double context_par, double fixed_effect_par, int nsims, int seed);
+RcppExport SEXP _njforce_sim_events(SEXP neventsSEXP, SEXP nofficersSEXP, SEXP min_per_eventSEXP, SEXP max_per_eventSEXP, SEXP min_yearSEXP, SEXP max_yearSEXP, SEXP min_rateSEXP, SEXP max_rateSEXP, SEXP female_parSEXP, SEXP years_parSEXP, SEXP rho_parSEXP, SEXP exposure_parSEXP, SEXP context_parSEXP, SEXP fixed_effect_parSEXP, SEXP nsimsSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< int >::type nevents(neventsSEXP);
@@ -48,29 +48,33 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type rho_par(rho_parSEXP);
     Rcpp::traits::input_parameter< double >::type exposure_par(exposure_parSEXP);
     Rcpp::traits::input_parameter< double >::type context_par(context_parSEXP);
+    Rcpp::traits::input_parameter< double >::type fixed_effect_par(fixed_effect_parSEXP);
     Rcpp::traits::input_parameter< int >::type nsims(nsimsSEXP);
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(sim_events(nevents, nofficers, min_per_event, max_per_event, min_year, max_year, min_rate, max_rate, female_par, years_par, rho_par, exposure_par, context_par, nsims, seed));
+    rcpp_result_gen = Rcpp::wrap(sim_events(nevents, nofficers, min_per_event, max_per_event, min_year, max_year, min_rate, max_rate, female_par, years_par, rho_par, exposure_par, context_par, fixed_effect_par, nsims, seed));
     return rcpp_result_gen;
 END_RCPP
 }
 // sim_events2
-std::vector<std::vector<double>> sim_events2(std::vector< int > incidentid, std::vector< int > officerid, std::vector< bool > female, std::vector< int > years, double female_par, double years_par, double rho_par, double exposure_par, double context_par, int nsims, int seed);
-RcppExport SEXP _njforce_sim_events2(SEXP incidentidSEXP, SEXP officeridSEXP, SEXP femaleSEXP, SEXP yearsSEXP, SEXP female_parSEXP, SEXP years_parSEXP, SEXP rho_parSEXP, SEXP exposure_parSEXP, SEXP context_parSEXP, SEXP nsimsSEXP, SEXP seedSEXP) {
+std::vector<std::vector<double>> sim_events2(std::vector< int > incidentid, std::vector< int > officerid, std::vector< bool > female, std::vector< double > rate, std::vector< double > fixed_effect, std::vector< int > years, double female_par, double years_par, double rho_par, double exposure_par, double context_par, double fixed_effect_par, int nsims, int seed);
+RcppExport SEXP _njforce_sim_events2(SEXP incidentidSEXP, SEXP officeridSEXP, SEXP femaleSEXP, SEXP rateSEXP, SEXP fixed_effectSEXP, SEXP yearsSEXP, SEXP female_parSEXP, SEXP years_parSEXP, SEXP rho_parSEXP, SEXP exposure_parSEXP, SEXP context_parSEXP, SEXP fixed_effect_parSEXP, SEXP nsimsSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< std::vector< int > >::type incidentid(incidentidSEXP);
     Rcpp::traits::input_parameter< std::vector< int > >::type officerid(officeridSEXP);
     Rcpp::traits::input_parameter< std::vector< bool > >::type female(femaleSEXP);
+    Rcpp::traits::input_parameter< std::vector< double > >::type rate(rateSEXP);
+    Rcpp::traits::input_parameter< std::vector< double > >::type fixed_effect(fixed_effectSEXP);
     Rcpp::traits::input_parameter< std::vector< int > >::type years(yearsSEXP);
     Rcpp::traits::input_parameter< double >::type female_par(female_parSEXP);
     Rcpp::traits::input_parameter< double >::type years_par(years_parSEXP);
     Rcpp::traits::input_parameter< double >::type rho_par(rho_parSEXP);
     Rcpp::traits::input_parameter< double >::type exposure_par(exposure_parSEXP);
     Rcpp::traits::input_parameter< double >::type context_par(context_parSEXP);
+    Rcpp::traits::input_parameter< double >::type fixed_effect_par(fixed_effect_parSEXP);
     Rcpp::traits::input_parameter< int >::type nsims(nsimsSEXP);
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(sim_events2(incidentid, officerid, female, years, female_par, years_par, rho_par, exposure_par, context_par, nsims, seed));
+    rcpp_result_gen = Rcpp::wrap(sim_events2(incidentid, officerid, female, rate, fixed_effect, years, female_par, years_par, rho_par, exposure_par, context_par, fixed_effect_par, nsims, seed));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -78,8 +82,8 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_njforce_find_candidates", (DL_FUNC) &_njforce_find_candidates, 4},
     {"_njforce_permute", (DL_FUNC) &_njforce_permute, 1},
-    {"_njforce_sim_events", (DL_FUNC) &_njforce_sim_events, 15},
-    {"_njforce_sim_events2", (DL_FUNC) &_njforce_sim_events2, 11},
+    {"_njforce_sim_events", (DL_FUNC) &_njforce_sim_events, 16},
+    {"_njforce_sim_events2", (DL_FUNC) &_njforce_sim_events2, 14},
     {NULL, NULL, 0}
 };
 

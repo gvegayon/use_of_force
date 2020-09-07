@@ -18,6 +18,8 @@ sim_events(
   years_par = -0.5,
   rho_par = 0,
   exposure_par = 0.5,
+  context_par = 1,
+  fe_par = 1,
   nsims = 1,
   seed = sample.int(.Machine$integer.max, 1)
 )
@@ -27,10 +29,14 @@ sim_events2(
   officerid,
   female,
   years,
+  fixed_effect = rep(0, length(incidentid)),
+  rate = rep(1, length(incidentid)),
   female_par = -0.5,
   years_par = . - 5,
   rho_par = 0.5,
   exposure_par = 0.5,
+  context_par = 1,
+  fe_par = 1,
   nsims = 1,
   seed = sample.int(.Machine$integer.max, 1)
 )
@@ -98,4 +104,19 @@ officers and use those to simulate each officers' reactions.
 }
 \examples{
 x <- simulate_njforce(1000, 400)
+
+x <- sim_events(
+  20000,200,
+  female_par = -.5, years_par = -.5, rho_par = -.5,
+  context_par = 1, exposure_par = .25, fe_par = 1,
+  seed = 445
+)
+
+# Full model knowing latent variables
+ans <- glm(
+  pointed000001 ~ -1+female + years + exposed + I(-first) + fixed_effect +
+  violence_level, data = x, family = binomial()
+)
+
+summary(ans)
 }

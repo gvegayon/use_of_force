@@ -42,6 +42,21 @@
 #' @export
 #' @examples
 #' x <- simulate_njforce(1000, 400)
+#'
+#' x <- sim_events(
+#'   20000,200,
+#'   female_par = -.5, years_par = -.5, rho_par = -.5,
+#'   context_par = 1, exposure_par = .25, fe_par = 1,
+#'   seed = 445
+#' )
+#'
+#' # Full model knowing latent variables
+#' ans <- glm(
+#'   pointed000001 ~ -1+female + years + exposed + I(-first) + fixed_effect +
+#'   violence_level, data = x, family = binomial()
+#' )
+#'
+#' summary(ans)
 sim_events <- function(
   nevents,
   nofficers,
@@ -56,6 +71,7 @@ sim_events <- function(
   rho_par       = 0,
   exposure_par  = .5,
   context_par   = 1,
+  fe_par        = 1,
   nsims         = 1,
   seed          = sample.int(.Machine$integer.max, 1)
 ) {
@@ -74,6 +90,7 @@ sim_events <- function(
     rho_par,
     exposure_par,
     context_par,
+    fe_par,
     nsims,
     seed
   )
@@ -83,9 +100,12 @@ sim_events <- function(
     "officerid",
     "female",
     "years",
+    "fixed_effect",
     "incidentid",
     "violence_level",
     "response_time",
+    "first",
+    "exposed",
     sprintf("pointed%06i", 1:nsims)
   )
 
@@ -109,31 +129,33 @@ sim_events2 <- function(
   officerid,
   female,
   years,
+  fixed_effect = rep(0, length(incidentid)),
+  rate         = rep(1, length(incidentid)),
   female_par   = -.5,
   years_par    = .-5,
   rho_par      = .5,
   exposure_par = .5,
   context_par  = 1,
+  fe_par       = 1,
   nsims        = 1,
   seed         = sample.int(.Machine$integer.max, 1)
 ) {
 
   ans <- sim_events_cpp2(
-    nevents,
-    nofficers,
-    min_per_event,
-    max_per_event,
-    min_year,
-    max_year,
-    min_rate,
-    max_rate,
+    incidentid,
+    officerid,
+    female,
+    rate,
+    fixed_effect,
+    years,
     female_par,
     years_par,
     rho_par,
     exposure_par,
     context_par,
+    fixed_effect_par,
     nsims,
-    seed
+    seesd
   )
 
   ans <- do.call(cbind, ans)
@@ -141,9 +163,12 @@ sim_events2 <- function(
     "officerid",
     "female",
     "years",
+    "fixed_effect",
     "incidentid",
     "violence_level",
     "response_time",
+    "first",
+    "exposed",
     sprintf("pointed%06i", 1:nsims)
   )
 
