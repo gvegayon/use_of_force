@@ -12,41 +12,64 @@
 #' of years of experience of the officers.
 #' @param min_rate,max_rate Doubles. Lower and upper bounds for the reaction
 #' rates (see details).
-#' @param female_par,years_par,rho_par,exposure_par Doubles. Parameters (coefficients) for
-#' the logistic probabilities.
+#' @param par_officer_female,par_officer_years,par_exposure_event,par_exposure_prev
+#' Doubles. Parameters (coefficients) for the logistic probabilities.
 #' @param seed Integer. Seed for the pseudo-number generation.
+#' @param nsims Integer. When greater than 1, the program will simulate multiple
+#' datasets, using the same set of parameters and individual's features, and
+#' append the corresponding results to the end of data frame.
 #'
 #' @details
 #' The simulation process goes as follow:
-#' 1. The officers are simulated. Female ~ Bernoulli(0.5),
-#'    Action rate ~ Unif(min_rate, max_rate),
-#'    Years of experience ~ Discrete Unif[min_years, max_year]
-#' 2. Events are simulated, each event has a nofficers ~ Discrete Unif[min_per_event, max_per_event]
+#' 1. The officers are simulated.
+#'
+#'    \deqn{Female ~ Bernoulli(0.5)}
+#'
+#'    \deqn{Action rate ~ Unif(min_rate, max_rate)}
+#'
+#'    \deqn{Years of experience ~ Discrete Unif[min_years, max_year]}
+#'
+#' 2. Events are simulated, each event has
+#'
+#'    \deqn{nofficers ~ Discrete Unif[min_per_event, max_per_event]}
+#'
 #'    Once the event is done, a sequence of reaction is given by each officers'
 #'    action rate (Poisson process). Whether an officer points or not is set by
 #'    a logistic model
 #'
-#'    point ~ female + years of experience + has any pointed? + previous exposure
+#'    \deqn{
+#'    point ~ logis(female + years of experience + has any pointed? + previous exposure)
+#'    }
 #'
 #'    The corresponding parameters are as specified by the user. Events are simulated
 #'    one at a time.
 #' @returns
 #' A data frame with the following columns
-#' - Officer id
-#' - Whether the officer is female
-#' - Years of experience
-#' - Incident id
-#' - Whether the officer pointed a gun
+#' - `officerid` Id of the police officer
+#' - `female` 1 if it is female
+#' - `years` years of experience
+#' - `fixed_effect` officers' propensity to point the gun
+#' - `incidentid` Incident id
+#' - `violence_level` Violence level of the event
+#' - `response_time` Time the officer took to respond
+#' - `first` Whether the officer was the first to act or not
+#' - `exposed` Whether the officer was exposed in the previous event
+#' - `pointed000001 ... pointed[nsims]` Integer vectors indicating whether the
+#' officer pointed the gun or not.
 #'
 #' Each row represents one report per officer involved in the event.
 #' @export
 #' @examples
-#' x <- simulate_njforce(1000, 400)
+#' x <- sim_events(1000, 400)
 #'
 #' x <- sim_events(
 #'   20000,200,
-#'   female_par = -.5, years_par = -.5, rho_par = -.5,
-#'   context_par = 1, exposure_par = .25, fe_par = 1,
+#'   par_officer_female = -.5,
+#'   par_officer_years = -.5,
+#'   par_exposure_event = -.5,
+#'   par_event_violence = 1,
+#'   par_exposure_prev = .25,
+#'   par_officer_fe = 1,
 #'   seed = 445
 #' )
 #'
@@ -60,39 +83,39 @@
 sim_events <- function(
   nevents,
   nofficers,
-  min_per_event = 1,
-  max_per_event = 5,
-  min_year      = 0,
-  max_year      = 10,
-  min_rate      = 5,
-  max_rate      = 5,
-  female_par    = -.5,
-  years_par     = -.5,
-  rho_par       = 0,
-  exposure_par  = .5,
-  context_par   = 1,
-  fe_par        = 1,
-  nsims         = 1,
-  seed          = sample.int(.Machine$integer.max, 1)
+  min_per_event      = 1,
+  max_per_event      = 5,
+  min_year           = 0,
+  max_year           = 10,
+  min_rate           = 5,
+  max_rate           = 5,
+  par_officer_female = -.5,
+  par_officer_years  = -.5,
+  par_exposure_event = 0,
+  par_exposure_prev  = .5,
+  par_event_violence = 1,
+  par_officer_fe     = 1,
+  nsims              = 1,
+  seed               = sample.int(.Machine$integer.max, 1)
 ) {
 
   ans <- sim_events_cpp(
-    nevents,
-    nofficers,
-    min_per_event,
-    max_per_event,
-    min_year,
-    max_year,
-    min_rate,
-    max_rate,
-    female_par,
-    years_par,
-    rho_par,
-    exposure_par,
-    context_par,
-    fe_par,
-    nsims,
-    seed
+    nevents            = nevents,
+    nofficers          = nofficers,
+    min_per_event      = min_per_event,
+    max_per_event      = max_per_event,
+    min_year           = min_year,
+    max_year           = max_year,
+    min_rate           = min_rate,
+    max_rate           = max_rate,
+    par_officer_female = par_officer_female,
+    par_officer_years  = par_officer_years,
+    par_exposure_event = par_exposure_event,
+    par_exposure_prev  = par_exposure_prev,
+    par_event_violence = par_event_violence,
+    par_officer_fe     = par_officer_fe,
+    nsims              = nsims,
+    seed               = seed
   )
 
   ans <- do.call(cbind, ans)
@@ -125,37 +148,37 @@ sim_events <- function(
 #' @importFrom Rcpp sourceCpp
 #' @useDynLib njforce, .registration = TRUE
 sim_events2 <- function(
-  incidentid,
-  officerid,
-  female,
-  years,
-  fixed_effect = rep(0, length(incidentid)),
-  rate         = rep(1, length(incidentid)),
-  female_par   = -.5,
-  years_par    = .-5,
-  rho_par      = .5,
-  exposure_par = .5,
-  context_par  = 1,
-  fe_par       = 1,
-  nsims        = 1,
-  seed         = sample.int(.Machine$integer.max, 1)
+  event_id,
+  officer_id,
+  officer_female,
+  officer_years,
+  officer_fe         = rep(0, length(event_id)),
+  officer_rate       = rep(1, length(event_id)),
+  par_officer_female = -.5,
+  par_officer_years  = -.5,
+  par_exposure_event = .5,
+  par_exposure_prev  = .5,
+  par_event_violence = 1,
+  par_officer_fe     = 1,
+  nsims              = 1,
+  seed               = sample.int(.Machine$integer.max, 1)
 ) {
 
-  ans <- sim_events_cpp2(
-    incidentid,
-    officerid,
-    female,
-    rate,
-    fixed_effect,
-    years,
-    female_par,
-    years_par,
-    rho_par,
-    exposure_par,
-    context_par,
-    fixed_effect_par,
-    nsims,
-    seesd
+  ans <- sim_events2_cpp(
+    event_id           = event_id,
+    officer_id         = officer_id,
+    officer_female     = officer_female,
+    officer_rate       = officer_rate,
+    officer_fe         = officer_fe,
+    officer_years      = officer_years,
+    par_officer_female = par_officer_female,
+    par_officer_years  = par_officer_years,
+    par_exposure_event = par_exposure_event,
+    par_exposure_prev  = par_exposure_prev,
+    par_event_violence = par_event_violence,
+    par_officer_fe     = par_officer_fe,
+    nsims              = nsims,
+    seed               = seed
   )
 
   ans <- do.call(cbind, ans)

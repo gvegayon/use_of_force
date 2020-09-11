@@ -14,29 +14,29 @@ sim_events(
   max_year = 10,
   min_rate = 5,
   max_rate = 5,
-  female_par = -0.5,
-  years_par = -0.5,
-  rho_par = 0,
-  exposure_par = 0.5,
-  context_par = 1,
-  fe_par = 1,
+  par_officer_female = -0.5,
+  par_officer_years = -0.5,
+  par_exposure_event = 0,
+  par_exposure_prev = 0.5,
+  par_event_violence = 1,
+  par_officer_fe = 1,
   nsims = 1,
   seed = sample.int(.Machine$integer.max, 1)
 )
 
 sim_events2(
-  incidentid,
-  officerid,
-  female,
-  years,
-  fixed_effect = rep(0, length(incidentid)),
-  rate = rep(1, length(incidentid)),
-  female_par = -0.5,
-  years_par = . - 5,
-  rho_par = 0.5,
-  exposure_par = 0.5,
-  context_par = 1,
-  fe_par = 1,
+  event_id,
+  officer_id,
+  officer_female,
+  officer_years,
+  officer_fe = rep(0, length(event_id)),
+  officer_rate = rep(1, length(event_id)),
+  par_officer_female = -0.5,
+  par_officer_years = -0.5,
+  par_exposure_event = 0.5,
+  par_exposure_prev = 0.5,
+  par_event_violence = 1,
+  par_officer_fe = 1,
   nsims = 1,
   seed = sample.int(.Machine$integer.max, 1)
 )
@@ -53,8 +53,11 @@ of years of experience of the officers.}
 \item{min_rate, max_rate}{Doubles. Lower and upper bounds for the reaction
 rates (see details).}
 
-\item{female_par, years_par, rho_par, exposure_par}{Doubles. Parameters (coefficients) for
-the logistic probabilities.}
+\item{par_officer_female, par_officer_years, par_exposure_event, par_exposure_prev}{Doubles. Parameters (coefficients) for the logistic probabilities.}
+
+\item{nsims}{Integer. When greater than 1, the program will simulate multiple
+datasets, using the same set of parameters and individual's features, and
+append the corresponding results to the end of data frame.}
 
 \item{seed}{Integer. Seed for the pseudo-number generation.}
 
@@ -67,11 +70,17 @@ of the officers.}
 \value{
 A data frame with the following columns
 \itemize{
-\item Officer id
-\item Whether the officer is female
-\item Years of experience
-\item Incident id
-\item Whether the officer pointed a gun
+\item \code{officerid} Id of the police officer
+\item \code{female} 1 if it is female
+\item \code{years} years of experience
+\item \code{fixed_effect} officers' propensity to point the gun
+\item \code{incidentid} Incident id
+\item \code{violence_level} Violence level of the event
+\item \code{response_time} Time the officer took to respond
+\item \code{first} Whether the officer was the first to act or not
+\item \code{exposed} Whether the officer was exposed in the previous event
+\item \verb{pointed000001 ... pointed[nsims]} Integer vectors indicating whether the
+officer pointed the gun or not.
 }
 
 Each row represents one report per officer involved in the event.
@@ -85,15 +94,24 @@ process.
 \details{
 The simulation process goes as follow:
 \enumerate{
-\item The officers are simulated. Female ~ Bernoulli(0.5),
-Action rate ~ Unif(min_rate, max_rate),
-Years of experience ~ Discrete Unif\link{min_years, max_year}
-\item Events are simulated, each event has a nofficers ~ Discrete Unif\link{min_per_event, max_per_event}
+\item The officers are simulated.
+
+\deqn{Female ~ Bernoulli(0.5)}
+
+\deqn{Action rate ~ Unif(min_rate, max_rate)}
+
+\deqn{Years of experience ~ Discrete Unif[min_years, max_year]}
+\item Events are simulated, each event has
+
+\deqn{nofficers ~ Discrete Unif[min_per_event, max_per_event]}
+
 Once the event is done, a sequence of reaction is given by each officers'
 action rate (Poisson process). Whether an officer points or not is set by
 a logistic model
 
-point ~ female + years of experience + has any pointed? + previous exposure
+\deqn{
+   point ~ logis(female + years of experience + has any pointed? + previous exposure)
+   }
 
 The corresponding parameters are as specified by the user. Events are simulated
 one at a time.
@@ -103,12 +121,16 @@ In the case of \code{sim_events2}, the user can pass predefined events and
 officers and use those to simulate each officers' reactions.
 }
 \examples{
-x <- simulate_njforce(1000, 400)
+x <- sim_events(1000, 400)
 
 x <- sim_events(
   20000,200,
-  female_par = -.5, years_par = -.5, rho_par = -.5,
-  context_par = 1, exposure_par = .25, fe_par = 1,
+  par_officer_female = -.5,
+  par_officer_years = -.5,
+  par_exposure_event = -.5,
+  par_event_violence = 1,
+  par_exposure_prev = .25,
+  par_officer_fe = 1,
   seed = 445
 )
 

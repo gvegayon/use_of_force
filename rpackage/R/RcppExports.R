@@ -32,11 +32,11 @@ permute <- function(candidates) {
     .Call(`_njforce_permute`, candidates)
 }
 
-sim_events_cpp <- function(nevents, nofficers, min_per_event = 1L, max_per_event = 5L, min_year = 0L, max_year = 10L, min_rate = 5L, max_rate = 5L, female_par = -.5, years_par = -.5, rho_par = 0, exposure_par = .5, context_par = 1.0, fixed_effect_par = 1.0, nsims = 1L, seed = 123L) {
-    .Call(`_njforce_sim_events`, nevents, nofficers, min_per_event, max_per_event, min_year, max_year, min_rate, max_rate, female_par, years_par, rho_par, exposure_par, context_par, fixed_effect_par, nsims, seed)
+sim_events_cpp <- function(nevents, nofficers, min_per_event = 1L, max_per_event = 5L, min_year = 0L, max_year = 10L, min_rate = 5L, max_rate = 5L, par_officer_female = -.5, par_officer_years = -.5, par_exposure_event = 0, par_exposure_prev = .5, par_event_violence = 1.0, par_officer_fe = 1.0, nsims = 1L, seed = 123L) {
+    .Call(`_njforce_sim_events`, nevents, nofficers, min_per_event, max_per_event, min_year, max_year, min_rate, max_rate, par_officer_female, par_officer_years, par_exposure_event, par_exposure_prev, par_event_violence, par_officer_fe, nsims, seed)
 }
 
-sim_events2_cpp <- function(incidentid, officerid, female, rate, fixed_effect, years, female_par, years_par, rho_par, exposure_par, context_par, fixed_effect_par, nsims, seed) {
-    .Call(`_njforce_sim_events2`, incidentid, officerid, female, rate, fixed_effect, years, female_par, years_par, rho_par, exposure_par, context_par, fixed_effect_par, nsims, seed)
+sim_events2_cpp <- function(event_id, officer_id, officer_female, officer_rate, officer_fe, officer_years, par_officer_female, par_officer_years, par_exposure_event, par_exposure_prev, par_event_violence, par_officer_fe, nsims, seed) {
+    .Call(`_njforce_sim_events2`, event_id, officer_id, officer_female, officer_rate, officer_fe, officer_years, par_officer_female, par_officer_years, par_exposure_event, par_exposure_prev, par_event_violence, par_officer_fe, nsims, seed)
 }
 
