@@ -20,7 +20,23 @@ colnames(reports)[2] <- "officerid"
 
 
 # Filtering complete cases only
+reports[, Nevents:=.N, by = officerid]
 reports2 <- reports[complete.cases(officer_male, officer_nyears)]
+reports2 <- reports2[Nevents <= 10]
+p <- reports2[, .(N = .N, P = sum(firearm_pointed) ), by = incidentid]
+
+# If using this data, in most cases there are at most 2 officers
+# and furthermore, at most one points the gun, with two pointing a very
+# rare event.
+
+# The only issue still is the fact that individuals showup more than
+# once, and that we cannot control for specific events' features.
+
+# In the paper we saw about permutations, they controlled this by
+# computing a conditional on pairs. Instead, we could do permutations
+# based on event features: Number of officers, City, Time of the day
+# time
+addmargins(p[, table(N, P)])
 
 # Simulating some fake data
 set.seed(12351)

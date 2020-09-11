@@ -115,9 +115,9 @@ library(lme4)
 ans_re <- glmer(
   firearm_pointed ~ 
     exposure_i + female + police + officer_nyears + factor(town) +
-    nevent+ factor(officer_race) + (1 | officerid) + nofficers + firearm_pointed_prev,
+    nevent+ factor(officer_race) + (1 | incidentid) + nofficers + firearm_pointed_prev,
   data   = reports,
-  subset = prev_no_solo & nevents <= max_n_events,
+  subset = nevents <= max_n_events,
   family = binomial(link="logit")
   )
 ```
@@ -140,28 +140,23 @@ x <- as.matrix(
   subset(
     reports,
     select = c(
-      officerid, female, townid, mult_officers, prev_no_solo, datenum, raceid
+      # officerid, female, townid, mult_officers, prev_no_solo, datenum, raceid
+      townid, mult_officers, datenum
       )
     )
 )
 
 candidates <- find_candidates(
-  features = x[,-1],
-  upper    = c(0, 0, 0, 0, 45, 0),
-  lower    = c(0, 0, 0, 0, -45, 0),
-  as_abs   = c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE)
+  features = x,
+  upper    = c(0, 0, 45),
+  lower    = c(0, 0, -45),
+  as_abs   = c(TRUE, TRUE, FALSE)
 )
 
-candidates_alt <- find_candidates(
-  features = x[, c("officerid", "mult_officers")],
-  upper    = c(0,0),
-  lower    = c(0,0),
-  as_abs   = c(TRUE, TRUE) 
-)
 
 library(magrittr)
 reports[, which(!prev_no_solo & nevents < max_n_events)] %>%
-  extract(candidates_alt, .) %>%
+  extract(candidates, .) %>%
   sapply(length) %>%
   table
 ```
@@ -172,7 +167,7 @@ Nperm <- 5000
 # Precomputing permutations
 set.seed(144)
 permutations <- replicate(
-  Nperm, permute(candidates_alt),
+  Nperm, permute(candidates),
   simplify = FALSE)
 
 # How many will change
@@ -187,7 +182,7 @@ hist(
 
 
 ```{r which-can-be-permuted}
-reports$has_permutations <- sapply(candidates_alt, length) > 0
+reports$has_permutations <- sapply(candidates, length) > 0
 ```
 
 
@@ -217,7 +212,7 @@ ans_perm1 <- parallel::parLapply(cl, permutations, function(p) {
   # environment(baseline_model) <- environment()
   tmp <- glm(
     baseline_model1, data = tmp,
-    subset = prev_no_solo (nevents <= max_n_events) & has_permutations
+    subset = prev_no_solo & (nevents <= max_n_events) & has_permutations
     )
   
   coef(tmp)
