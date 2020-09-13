@@ -18,9 +18,12 @@ reports[, date := as.Date(date, format = "%m/%d/%Y")]
 colnames(reports)[2] <- "officerid"
 
 ans <- replicate(100, sim_events2(
-  incidentid = reports$incidentid,
-  officerid = reports$officerid, female = !reports$officer_male,
-  years = reports$officer_nyears, nsims = 1, context_par = 0
+  event_id       = reports$incidentid,
+  officer_id     = reports$officerid,
+  officer_female = !reports$officer_male,
+  officer_years  = reports$officer_nyears,
+  nsims = 1,
+  par_event_violence = 0
   ), simplify = FALSE)
 ans <- lapply(ans, "[[", "pointed000001")
 ans <- do.call(cbind, ans)

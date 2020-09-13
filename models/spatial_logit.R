@@ -22,6 +22,12 @@ colnames(reports)[2] <- "officerid"
 # Filtering complete cases only
 reports[, Nevents:=.N, by = officerid]
 reports2 <- reports[complete.cases(officer_male, officer_nyears)]
+
+# Events with two officers only
+reports2[, Nofficers := .N, by = incidentid]
+reports2[, Npointed := sum(firearm_pointed), by = incidentid]
+reports2[, table(Nofficers, Npointed)]
+
 reports2 <- reports2[Nevents <= 10]
 p <- reports2[, .(N = .N, P = sum(firearm_pointed) ), by = incidentid]
 

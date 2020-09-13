@@ -22,6 +22,16 @@ reports <- subset(
     ))
 reports[, date := as.Date(date, format = "%m/%d/%Y")]
 colnames(reports)[2] <- "officerid"
+
+reports <- reports[order(officerid, date)]
+
+reports[, nofficers := .N, by = incidentid]
+reports2 <- reports[nofficers >= 2]
+reports2[, nevent  := 1:.N, by = officerid]
+reports2[, nevents := .N, by = officerid]
+
+reports2[,table(firearm_pointed)]
+reports2[nevent == nevents][,table(firearm_pointed)]
 ```
 
 
@@ -36,6 +46,7 @@ reports[, exposure_i := shift(exposure_i, type="lag"), by = "officerid"]
 reports[, female := as.integer(officer_male == 0)]
 reports[, police := as.integer(officer_po == 1)]
 reports[, sleo   := as.integer(officer_sleo == 1)]
+reports[, white  := as.integer(officer_race == "white")]
 
 # Violent or weapon related incident
 reports[, violent_or_weapon := as.integer(grepl("armed|gun|violen|weap|shoot|knife", Incident_type))]
@@ -104,6 +115,30 @@ ans2 <- glm(
   data = reports,
   subset = prev_no_solo & nevents <= max_n_events
 )
+
+ans3 <- glm(
+  firearm_pointed ~ 
+    exposure_i*female + police + officer_nyears + factor(town) +
+    nevent+ white + sleo + nofficers + firearm_pointed_prev,
+  data = reports,
+  subset = prev_no_solo & nevents <= max_n_events
+)
+
+ans4 <- glm(
+  firearm_pointed ~ 
+    exposure_i + police + officer_nyears + factor(town) + female +
+    nevent+ white + sleo + nofficers + firearm_pointed_prev,
+  data = reports,
+  subset = prev_no_solo & nevents <= max_n_events
+)
+
+ans4 <- glm(
+  firearm_pointed ~ 
+    exposure_i + police + officer_nyears + factor(town) + female +
+    nevent+ white + sleo + nofficers + firearm_pointed_prev + nsubjects,
+  data = reports,
+  subset = prev_no_solo & nevents <= max_n_events
+)
 ```
 
 
@@ -114,12 +149,15 @@ There are a couple of dozen officers who will show
 library(lme4)
 ans_re <- glmer(
   firearm_pointed ~ 
-    exposure_i + female + police + officer_nyears + factor(town) +
-    nevent+ factor(officer_race) + (1 | incidentid) + nofficers + firearm_pointed_prev,
+    exposure_i + sleo + police +
+    I(town == "Gloucester Township") + female + officer_nyears +
+    (1 | incidentid) + nsubjects,
   data   = reports,
-  subset = nevents <= max_n_events,
-  family = binomial(link="logit")
+  subset = nevents <= max_n_events & nofficers <= 4,
+  family = binomial(link="logit"), control = glmerControl(sparseX = TRUE)
   )
+if (interactive())
+  summary(ans_re)
 ```
 
 
