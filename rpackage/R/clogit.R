@@ -1,3 +1,6 @@
+library(data.table)
+library(survival)
+
 # This function computes the conditional likelihood for an arbitrary number of
 # police officers. If sum(y) in {0, n} then the loglikelihood equals 0.
 ll <- function(y, x, beta) {
@@ -37,9 +40,12 @@ reports <- reports[order(officerid, incidentid),]
 reports[, exposure_i := as.integer((sum(firearm_pointed) - firearm_pointed) > 0), by = "incidentid"]
 reports[, exposure_i := shift(exposure_i, type="lag"), by = "officerid"]
 reports[, firearm_pointed_prev := shift(firearm_pointed, type = "lag", fill = FALSE), by = officerid]
-reports2 <- reports[complete.cases(
-  exposure_i, firearm_pointed, officer_male, officer_nyears,
-  officer_po, officer_sleo,
+reports2 <- copy(reports)
+reports2[, nevents := 1:.N, by = incidentid]
+reports2 <- reports2[complete.cases(
+  # exposure_i,
+  firearm_pointed, officer_male, officer_nyears,
+  officer_po, #officer_sleo,
   officer_rank
   )]
 reports2[, officer_nyears := officer_nyears/sd(officer_nyears, na.rm = TRUE)]
@@ -49,13 +55,14 @@ fun <- function(b, verb = TRUE) {
           .(ll = ll(
             y = firearm_pointed,
             x = cbind(
-              exposure_i,
+              # exposure_i,
               # officer_male,
               officer_nyears,
               officer_race != "white",
               officer_po,
               # officer_sleo,
-              officer_rank
+              officer_rank,
+              nevents
               ),
             beta = cbind(b)
             )),
@@ -72,28 +79,26 @@ fun(ans$par)
 ans$par
 
 # Computing pvalues
-pval <- 2*pnorm(-abs(ans$par/diag(hess)))
+pval <- 2*pnorm(-abs(ans$par/sqrt(diag(hess))))
 
 knitr::kable(
   data.frame(
     coef = ans$par,
     pval = pval,
-    sd   = diag(hess)
+    sd   = sqrt(diag(hess))
   )
 )
 
 reports2[, noff := .N, by = incidentid]
 reports2[, incl := sum(firearm_pointed) != 0 & sum(firearm_pointed) != .N, by = incidentid]
 
-ans2<-clogit(firearm_pointed ~ exposure_i + officer_nyears +
-       I(officer_race != "white") +
-       officer_po +
-       # officer_sleo +
-       officer_rank +
-         strata(incidentid), data = reports2 #[incl == TRUE]
-       )
-summary(ans2)
 
+ans2<-clogit(
+  firearm_pointed ~ exposure_i + officer_nyears + I(officer_race != "white") +
+    officer_po + officer_rank + nevents + strata(incidentid),
+  data = reports2[incl == TRUE]
+  )
+summary(ans2)
 
 # These two numbers must match
 logLik(ans2)
