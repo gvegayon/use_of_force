@@ -18,6 +18,8 @@ reports <- subset(
     officer_po, officer_sleo, nsubjects, Incident_type
     ))
 reports[, date := as.Date(date, format = "%m/%d/%Y")]
+
+
 ```
 
 # Conditional Permutation Test
