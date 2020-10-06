@@ -91,11 +91,12 @@ knitr::kable(
 
 reports2[, noff := .N, by = incidentid]
 reports2[, incl := sum(firearm_pointed) != 0 & sum(firearm_pointed) != .N, by = incidentid]
+reports2[, crime_in_progress := grepl("crime in pro", Incident_type)]
 
 
 ans2<-clogit(
   firearm_pointed ~ exposure_i + officer_nyears + I(officer_race != "white") +
-    officer_po + officer_rank + nevents + strata(incidentid),
+    officer_po + officer_rank + nevents + crime_in_progress + strata(incidentid),
   data = reports2[incl == TRUE]
   )
 summary(ans2)
