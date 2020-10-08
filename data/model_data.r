@@ -211,137 +211,24 @@ unique(dat[, list(clog_pointed, caseid)])[,table(clog_pointed)] # 316
 dat[clog_fired == TRUE, .N] # 93
 dat[clog_pointed == TRUE, .N] # 893
 
-# Generating the model data pointed --------------------------------------------
-data_model <- dat[clog_pointed == TRUE, .(
-  officerid_num,
-  town,
-  # officer_rank_cat,
-  firearm_pointed, 
-  officer_male, 
-  officer_nyears, 
-  officer_po, 
-  # officer_sleo,
+# Subsetting data for analysis -------------------------------------------------
+data_model <- dat[clog_pointed == TRUE & !is.na(exposure_i) & !is.na(exposure_d), .(
   caseid,
+  officerid_num,
+  officer_male,
+  firearm_pointed,
+  officer_nyears,
+  officer_po,
+  officer_sleo,
   exposure_i,
   exposure_d,
   officer_race,
   nevents,
-  nevents,
-  # overall_race,
-  town
-  )]
-
-data_model[, lapply(.SD, function(i) sum(is.na(i)))]
-
-data_model <- data_model[complete.cases(data_model)]
-
-# Models
-library(survival)
-model_0 <- firearm_pointed ~ I(as.integer(exposure_i > 0)) + officer_male +
-  nevents + I(officer_nyears^2)+ officer_nyears + officer_po +
-  factor(officer_race) + strata(caseid)
-
-model_1 <- firearm_pointed ~ I(as.integer(exposure_i > 0)) + officer_male +
-  nevents + officer_nyears + officer_po +
-  factor(officer_race) + strata(caseid)
-
-model_2 <- firearm_pointed ~ I(as.integer(exposure_d > 0)) + officer_male +
-  nevents + I(officer_nyears^2)+ officer_nyears + officer_po +
-  factor(officer_race) + strata(caseid)
-
-model_3 <- firearm_pointed ~ I(as.integer(exposure_d > 0)) + officer_male +
-  nevents + officer_nyears + officer_po +
-  factor(officer_race) + strata(caseid)
-
-
-ans_0 <- clogit(model_0, dat = data_model)
-ans_1 <- clogit(model_1, dat = data_model)
-ans_2 <- clogit(model_2, dat = data_model)
-ans_3 <- clogit(model_3, dat = data_model)
-
-texreg::screenreg(list(
-  ans_0, ans_1, ans_2, ans_3
-))
-
-lmtest::lrtest(ans_0, ans_1)
-lmtest::lrtest(ans_2, ans_3)
-
-table(data_model[, length(unique(town)), by = caseid]$V1)
-
-summary(
-  glm(firearm_pointed ~
-        exposure_i +
-        officer_male  +
-        # nevents +
-        # I(overall_race != officer_race) +
-        # I(overall_race == "black") +
-        # I(officer_nyears^2)+
-        officer_nyears+
-        officer_po +
-        factor(officer_race)
-        , data = data_model, family = binomial()
-      )
-)
-
-# Generating the model data fired ----------------------------------------------
-data_model <- dat[clog_fired == TRUE, .(
-  officerid_num,
-  # officer_rank_cat,
-  firearm_discharge, 
-  officer_male, 
-  officer_nyears, 
-  officer_po, 
-  # officer_sleo,
-  caseid,
-  # exposure_i,
-  officer_race
-  # nevents
+  town,
+  supid,
+  nofficers
 )]
 
-data_model <- data_model[complete.cases(data_model)]
-library(survival)
-ans <- clogit(
-  firearm_discharge ~
-    # exposure_i +
-    officer_male  +
-    # nevents +
-    # factor(officer_rank_cat) + 
-    officer_po +
-    I(officer_race == "white") +
-    # officer_sleo +
-    officer_nyears+
-    # I(officer_nyears^2)+
-    strata(caseid),
-  dat = data_model,
-  # family = binomial("logit")
-)
-summary(ans)
+fwrite(data_model, file = "data/model_data.csv")
 
-# Model taking into account features of the event itself -----------------------
-# but actually looking at features relating to interaction with the individual
 
-library(lme4)
-ans_re <- glmer(
-  firearm_pointed ~ 
-  officer_male  +
-    # nevents +
-    exposure_i + 
-    factor(officer_race)+
-    # I(overall_race != officer_race) +
-    # I(overall_race == "black") +
-    # I(overall_race == "hispanic") +
-    # I(overall_race == "white") +
-    nsubjects + 
-    I(officer_nyears^2)+
-    officer_nyears+
-    officer_po +
-    # factor(officer_race)  + 
-    factor(county) +
-    (1 | caseid),
-  data = dat,
-  subset  = nofficers >= 2 & grepl("^(Essex|Ocean)", county),
-  family  = binomial(link="logit"),
-  control = glmerControl(sparseX = TRUE)
-)
-
-summary(ans_re)
