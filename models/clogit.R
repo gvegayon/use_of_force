@@ -104,4 +104,18 @@ saveRDS(
 
 # Permutation test -------------------------------------------------------------
 
+library(njforce)
+set.seed(1231)
+ans_a1_perm <- clogit_perm(2000, model_a1, dat = model_data, ncpus = 4)
+ans_a2_perm <- clogit_perm(2000, model_a2, dat = model_data, ncpus = 4)
+ans_a3_perm <- clogit_perm(2000, model_a3, dat = model_data, ncpus = 4)
+ans_b1_perm <- clogit_perm(2000, model_b1, dat = model_data, ncpus = 4)
+ans_b2_perm <- clogit_perm(2000, model_b2, dat = model_data, ncpus = 4)
+ans_b3_perm <- clogit_perm(2000, model_b3, dat = model_data, ncpus = 4)
 
+saveRDS(
+  list(models = list(
+    ans_a1_perm, ans_a2_perm, ans_a3_perm,
+    ans_b1_perm, ans_b2_perm, ans_b3_perm
+  ), labels = varnames), file = "models/clogit_permutation.rds"
+)
