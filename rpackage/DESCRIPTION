@@ -14,4 +14,4 @@ RoxygenNote: 7.1.1
 LinkingTo: 
     Rcpp
 Imports: 
-    Rcpp,survival,stats,parallel
+    Rcpp,survival,stats,parallel,texreg

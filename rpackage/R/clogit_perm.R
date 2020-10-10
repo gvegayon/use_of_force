@@ -92,17 +92,78 @@ clogit_perm <- function(
   pvals   <- rowMeans(t(coefs) < stats::coef(model0))
   pvals[] <- ifelse(pvals < .5, pvals, 1 - .5)*2
 
-  ci      <- apply(coefs, 2, stats::quantile, probs = c(.025, .975))
-
   structure(
     list(
       pvals      = pvals,
-      ci         = ci,
-      model      = model0,
+      fit        = model0,
       coefs      = coefs,
-      candidates = candidates
+      candidates = candidates,
+      formula    = formula
       ),
     class = "clogit_perm"
   )
 
 }
+
+#' @export
+coef.clogit_perm <- function(object, ...) stats::coef(object$fit)
+
+#' @export
+vcov.clogit_perm <- function(object, ...) cov(object$coefs)
+
+#' @export
+formula.clogit_perm <- function(x, ...) x$formula
+
+#' @export
+confint.clogit_perm <- function(object, param, level = 0.95, ...) {
+
+  if (missing(param))
+    param <- 1:ncol(object$coefs)
+
+  apply(
+    object$coefs[, param, drop=FALSE], 2,
+    stats::quantile,
+    probs = c(0,1) + c(-1,1)*(1-level)/2
+    )
+
+}
+
+#' Extract components for texreg objects
+#' @export
+#' @importFrom texreg extract
+#'
+extract.clogit_perm <- function(
+  model,
+  # include.aic = TRUE,
+  # include.bic = TRUE,
+  # include.loglik = TRUE,
+  # include.nnets = TRUE,
+  # include.offset = TRUE,
+  # include.convergence = TRUE,
+  # include.timing      = TRUE,
+  ...
+) {
+
+  coefficient.names <- colnames(model$coefs)
+  coefficients      <- stats::coef(model)
+  standard.errors   <- sqrt(diag(stats::vcov(model)))
+  significance      <- model$pvals
+
+  return(
+    texreg::createTexreg(
+      coef.names  = coefficient.names,
+      coef        = coefficients,
+      se          = standard.errors,
+      pvalues     = significance #,
+      # gof.names   = gof.names,
+      # gof         = gof,
+      # gof.decimal = gof.decimal
+    )
+  )
+
+}
+
+setMethod(
+  "extract", signature = className("clogit_perm", "njforce"),
+  definition = extract.clogit_perm
+)

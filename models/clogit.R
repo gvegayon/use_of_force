@@ -106,12 +106,29 @@ saveRDS(
 
 library(njforce)
 set.seed(1231)
+
+ans0_perm <- clogit_perm(
+  2000,
+  firearm_pointed ~ I(as.integer(exposure_d > 0)) + officer_male + 
+    nevents + officer_nyears + officer_po + I(officer_race == "white") +
+    strata(caseid) + I(as.integer(exposure_d > 0) * officer_nyears),
+  dat = model_data, ncpus = 4
+  )
+
 ans_a1_perm <- clogit_perm(2000, model_a1, dat = model_data, ncpus = 4)
 ans_a2_perm <- clogit_perm(2000, model_a2, dat = model_data, ncpus = 4)
 ans_a3_perm <- clogit_perm(2000, model_a3, dat = model_data, ncpus = 4)
 ans_b1_perm <- clogit_perm(2000, model_b1, dat = model_data, ncpus = 4)
 ans_b2_perm <- clogit_perm(2000, model_b2, dat = model_data, ncpus = 4)
 ans_b3_perm <- clogit_perm(2000, model_b3, dat = model_data, ncpus = 4)
+
+
+texreg::screenreg(
+  l = list(
+    ans_a1_perm, ans_a2_perm, ans_a3_perm,
+    ans_b1_perm, ans_b2_perm, ans_b3_perm
+  ), custom.coef.map = varnames
+)
 
 saveRDS(
   list(models = list(

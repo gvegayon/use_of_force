@@ -226,7 +226,8 @@ data_model <- dat[clog_pointed == TRUE & !is.na(exposure_i) & !is.na(exposure_d)
   nevents,
   town,
   supid,
-  nofficers
+  nofficers,
+  nsubjects
 )]
 
 fwrite(data_model, file = "data/model_data.csv")
