@@ -22,7 +22,7 @@ sstats <- model_data[,
     "Police Officer"       = summarizer(officer_po, FALSE, sum),
     # "Special Law Enforce." = summarizer(officer_sleo, FALSE, sum),
     "N Officers"           = summarizer(nofficers, FALSE),
-    "N Events"             = summarizer(nofficers, FALSE),
+    "N Events"             = summarizer(nevents, FALSE),
     "N observations"       = .N
   ), by = firearm_pointed
   ]
@@ -107,11 +107,14 @@ saveRDS(
 library(njforce)
 set.seed(1231)
 
+model_data[, relative_exp := officer_nyears - mean(officer_nyears), by = caseid]
+model_data[, relative_exp := which.max(officer_nyears) == 1:.N, by = caseid]
+
 ans0_perm <- clogit_perm(
   2000,
-  firearm_pointed ~ I(as.integer(exposure_d > 0)) + officer_male + 
+  firearm_pointed ~ I(as.integer(exposure_any > 0)) + officer_male + 
     nevents + officer_nyears + officer_po + I(officer_race == "white") +
-    strata(caseid) + I(as.integer(exposure_d > 0) * officer_nyears),
+    strata(caseid) ,
   dat = model_data, ncpus = 4
   )
 

@@ -32,5 +32,21 @@ htmlreg(
   ))
 ```
 
+Models
+
+```{r clogit-perm, results='asis'}
+models <- readRDS("../models/clogit_permutation.rds")
+htmlreg(
+  l = models$models,
+  custom.coef.map = models$labels,
+  stars = c(.01, .05, .1),
+  caption = paste(
+    "Conditional Logit Estimates with Permutation. Standard errors may be invalid due to",
+    "possible contagion (or anti-contagion) effects.",
+    "The last column corresponds to a logistic regression."
+  ))
+```
+
+
 
 

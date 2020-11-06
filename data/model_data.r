@@ -4,6 +4,15 @@ dat <- fread("data-raw/njdatageorge200918.csv")
 
 dat[, date := as.IDate(date, format = "%m/%d/%Y")]
 
+# Looking at the date variable -------------------------------------------------
+dat[, missing_date := is.na(date)]
+dat[, missing_date := any(missing_date) & any(!missing_date), by=caseid]
+dat[, table(missing_date, useNA = "always")] # Zero cases in which we can attribute a date
+
+# We need to drop all those observations, which are in total 768
+dat <- dat[!is.na(missing_date)]
+dat[, missing_date := NULL]
+
 # Looking at the race variable -------------------------------------------------
 sdcols <- sprintf("Subject_%i_race", 1:3)
 dat[, c(sdcols) := lapply(.SD, tolower), .SDcols = sdcols]
@@ -199,8 +208,11 @@ dat[, exposure_i := shift(exposure_i, type = "lag"), by = officerid_num]
 # Deferred exposure
 dat[, cumpointed := cumsum(fcoalesce(firearm_pointed, 0L)), by = officerid_num]
 dat[, exposure_d := sum(cumpointed > 0) - (cumpointed > 0), by = caseid]
-# View(dat[, .(officerid_num, caseid, exposure_d, cumpointed)])
 dat[, exposure_d := shift(exposure_d, type = "lag"), by = officerid_num]
+
+# Ever exposed:
+dat[, exposure_ever := sum(firearm_pointed) - firearm_pointed, by = caseid]
+dat[, exposure_ever := cumsum(exposure_ever), by = officerid_num]
 
 # How many events?
 dat[, nevents := 1:.N, by = officerid_num]
@@ -212,7 +224,13 @@ dat[clog_fired == TRUE, .N] # 93
 dat[clog_pointed == TRUE, .N] # 893
 
 # Subsetting data for analysis -------------------------------------------------
-data_model <- dat[clog_pointed == TRUE & !is.na(exposure_i) & !is.na(exposure_d), .(
+
+model_data <- dat[clog_pointed == TRUE & !is.na(exposure_i) & !is.na(exposure_d),]
+
+# Dropping cases in which the number of officers is less than 2
+model_data[, nofficers2 := .N, by=caseid]
+
+data_model <- model_data[nofficers2 >= 2, .(
   caseid,
   officerid_num,
   officer_male,

@@ -4,7 +4,14 @@
 \alias{extract.clogit_perm}
 \title{Extract components for texreg objects}
 \usage{
-extract.clogit_perm(model, ...)
+extract.clogit_perm(model, level = 0.95, odds = TRUE, ...)
+}
+\arguments{
+\item{model}{An object of class \link{clogit_perm}}
+
+\item{level}{Double. level for the CI.}
+
+\item{odds}{Logical, when \code{TRUE}, returns odds-ratios.}
 }
 \description{
 Extract components for texreg objects
