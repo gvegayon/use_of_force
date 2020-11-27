@@ -99,7 +99,8 @@ varnames <- list(
   'I(officer_nyears^2)' = "Years of Exp.^2",
   'officer_po' = "Police Officer",
   'I(officer_race == "white")TRUE' = "Race = White",
-  'strata(caseid)'
+  'strata(caseid)',
+  "relative_exp" = "Relative Exp."
 )
 
 texreg::screenreg(list(
