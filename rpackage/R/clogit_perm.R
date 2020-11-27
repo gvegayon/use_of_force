@@ -168,18 +168,16 @@ extract.clogit_perm <- function(
     cis_u <- cis_l[2,]
     cis_l <- cis_l[1,]
 
-    if (odds) {
-      cis_u <- exp(cis_u)
-      cis_l <- exp(cis_l)
-    }
-
   } else {
     cis_l <- numeric(0)
     cis_u <- numeric(0)
   }
 
-  if (odds)
+  if (odds) {
     coefficients <- exp(coefficients)
+    cis_u <- exp(cis_u)
+    cis_l <- exp(cis_l)
+  }
 
 
   return(

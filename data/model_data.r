@@ -248,6 +248,10 @@ data_model <- model_data[nofficers2 >= 2, .(
   nsubjects
 )]
 
+data_model[, relative_exp := officer_nyears - mean(officer_nyears), by = caseid]
+data_model[, relative_exp := fcoalesce(relative_exp, NA_real_), by = caseid]
+# model_data[, relative_exp := which.max(officer_nyears) == 1:.N, by = caseid]
+
 fwrite(data_model, file = "data/model_data.csv")
 
 
