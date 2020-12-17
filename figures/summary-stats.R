@@ -54,4 +54,14 @@ model_data[, prop.test(table(firearm_pointed, officer_po))]
 model_data[, wilcox.test(nofficers ~ firearm_pointed, alternative = "two.sided")] # Not normal, so need to assume wilcox
 model_data[, wilcox.test(nevents ~ firearm_pointed, alternative = "two.sided")] # Not normal, so need to assume wilcox
 
-
+# Visualizations
+library(ggplot2)
+ggplot(model_data, aes(nevents)) + 
+  geom_histogram(
+    aes(y=0.5*..density..,fill = as.factor(firearm_pointed)),
+    position="identity",
+    alpha = .5,
+    binwidth = 1
+    )
+   # +
+  facet_wrap(vars(as.factor(firearm_pointed)))

@@ -123,7 +123,7 @@ confint.clogit_perm <- function(object, param, level = 0.95, ...) {
   apply(
     object$coefs[, param, drop=FALSE], 2,
     stats::quantile,
-    probs = c(0,1) + c(-1,1)*(1-level)/2
+    probs = c(0, 1) + c(1, -1)*(1 - level)/2
     )
 
 }
@@ -158,9 +158,9 @@ extract.clogit_perm <- function(
   significance      <- model$pvals
 
   # GOF
-  gof.names   <- c("N events", "N perm", "N")
-  gof         <- c(model$fit$nevent, nrow(model$coefs), model$fit$n)
-  gof.decimal <- c(FALSE, FALSE, FALSE)
+  gof.names   <- c("N events", "N perm", "N", "AIC", "BIC")
+  gof         <- c(model$fit$nevent, nrow(model$coefs), model$fit$n, stats::AIC(model$fit), stats::BIC(model$fit))
+  gof.decimal <- c(FALSE, FALSE, FALSE, TRUE, TRUE)
 
   # Confidence intervals,
   if (length(dots$ci.force) && dots$ci.force) {

@@ -1,3 +1,33 @@
+#' Conditional Logit Log-likelihood
+#'
+#' Computes the log-likelihood for a single event.
+#'
+#' @param y Binary vector of length `n`. Response.
+#' @param x Numeric matrix of size `n x k`. Features.
+#' @param beta Numeric vector of size `k`. Coefficients.
+#'
+#' @return The log-likelihood of that event.
+#'
+#' @export
+clogit_loglike <- function(y, x, beta, n1 = sum(y)) {
+
+  n <- length(y)
+
+  if (n1 == n | n1 == 0)
+    return(0)
+
+  ans <- sum(x[which(y == 1), ] %*% beta)
+
+  sets <- combn(seq_len(n), n1, simplify = FALSE)
+
+  tmp <- 0
+  for (s in sets)
+    tmp <- tmp + exp(sum(x[s,] %*% beta))
+
+  ans - log(tmp)
+
+}
+
 if (FALSE) {
   library(data.table)
   library(survival)
@@ -67,7 +97,7 @@ if (FALSE) {
                 ),
               beta = cbind(b)
               )),
-            by = incidentid]
+            keyby = incidentid]
 
     # message(sum(ans < (0 - 1e-10)), " counted.")
     sum(ans$ll, na.rm = TRUE)
@@ -96,8 +126,8 @@ if (FALSE) {
 
 
   ans2<-clogit(
-    firearm_pointed ~ exposure_i + officer_nyears + I(officer_race != "white") +
-      officer_po + officer_rank + nevents + crime_in_progress + strata(incidentid),
+    firearm_pointed ~ officer_nyears + I(officer_race != "white") +
+      officer_po + officer_rank + nevents + strata(incidentid),
     data = reports2[incl == TRUE]
     )
   summary(ans2)
