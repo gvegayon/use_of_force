@@ -204,15 +204,17 @@ texreg::screenreg(
   stars = c(0.01, 0.05, 0.1),
   custom.coef.map = varnames)
 
-model_a6_total <- firearm_pointed ~
+model_a2_total <- firearm_pointed ~
   exposure_i +
   officer_male +
   nevents +
+  officer_nyears + 
+  officer_po +
   I(officer_race == "white") +
-  strata(caseid)
+  strata(caseid);
 
-model_b6_total <- firearm_pointed ~
-  exposure_d +
+model_a6_total <- firearm_pointed ~
+  exposure_i +
   officer_male +
   nevents +
   I(officer_race == "white") +
@@ -226,6 +228,22 @@ model_a8_total <- firearm_pointed ~
   I(officer_race == "white") +
   strata(caseid)
 
+model_b2_total <- firearm_pointed ~
+  exposure_d +
+  officer_male +
+  nevents +
+  officer_nyears + 
+  officer_po +
+  I(officer_race == "white") +
+  strata(caseid);
+
+model_b6_total <- firearm_pointed ~
+  exposure_d +
+  officer_male +
+  nevents +
+  I(officer_race == "white") +
+  strata(caseid)
+
 model_b8_total <- firearm_pointed ~
   exposure_d +
   officer_male +
@@ -234,6 +252,8 @@ model_b8_total <- firearm_pointed ~
   I(officer_race == "white") +
   strata(caseid)
 
+ans_a2_total_perm <- clogit_perm(2000, model_a2_total, dat = model_data, ncpus = ncpus)
+ans_b2_total_perm <- clogit_perm(2000, model_b2_total, dat = model_data, ncpus = ncpus)
 ans_a6_total_perm <- clogit_perm(2000, model_a6_total, dat = model_data, ncpus = ncpus)
 ans_b6_total_perm <- clogit_perm(2000, model_b6_total, dat = model_data, ncpus = ncpus)
 ans_a8_total_perm <- clogit_perm(2000, model_a8_total, dat = model_data, ncpus = ncpus)
