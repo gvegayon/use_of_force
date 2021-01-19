@@ -68,7 +68,15 @@ clogit_perm <- function(
       data.[, depvar.] <- data.[, depvar.][ord]
 
       # Fitting the survival model
-      stats::coef(survival::clogit(formula = formula., data = data., ...))
+      ans <- tryCatch(
+        stats::coef(survival::clogit(formula = formula., data = data., ...)),
+        error = function(e) e
+      )
+
+      if (inherits(ans, "error"))
+        return(as.character(ans))
+
+      ans
 
     }, formula. = formula, data. = data, ..., depvar. = depvar)
   } else {
@@ -79,14 +87,25 @@ clogit_perm <- function(
       data.[, depvar.] <- data.[, depvar.][ord]
 
       # Fitting the survival model
-      stats::coef(survival::clogit(formula = formula., data = data., ...))
+      ans <- tryCatch(
+        stats::coef(survival::clogit(formula = formula., data = data., ...)),
+        error = function(e) e
+      )
+
+      if (inherits(ans, "error"))
+        return(as.character(ans))
+
+      ans
 
     }, formula. = formula, data. = data, ..., depvar. = depvar)
 
   }
 
+  # Checking errors
+  is_err <- sapply(coefs, inherits, what = "character")
+
   # Building a list
-  coefs <- do.call(rbind, coefs)
+  coefs <- do.call(rbind, coefs[!is_err])
 
   # Calculating confidence intervals and pvals
   pvals   <- rowMeans(t(coefs) < stats::coef(model0))
@@ -98,7 +117,8 @@ clogit_perm <- function(
       fit        = model0,
       coefs      = coefs,
       candidates = candidates,
-      formula    = formula
+      formula    = formula,
+      errors     = data.frame(id = which(is_err), msg = coefs[which(is_err)], stringsAsFactors = TRUE)
       ),
     class = "clogit_perm"
   )

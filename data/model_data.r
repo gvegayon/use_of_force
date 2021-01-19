@@ -187,7 +187,7 @@ setnames(dat, "officer_nyears2", "officer_nyears")
 dat[, nofficers := .N, keyby = caseid]
 dat[, table(nofficers)]
 
-# NAs are 0s?
+# These variables are equal to one if "yes" and NA otherwise
 dat[, firearm_discharge := fcoalesce(firearm_discharge, 0L)]
 dat[, firearm_pointed   := fcoalesce(firearm_pointed, 0L)]
 
@@ -201,14 +201,17 @@ dat[, clog_pointed := prop_pointed > 0 & prop_pointed < 1,]
 
 # Lagged exposure
 setorder(dat, officerid_num, date, caseid)
-dat[, exposure_i := sum(firearm_pointed) - firearm_pointed, by = caseid]
+dat[, exposure_i := sum(firearm_pointed, na.rm = TRUE) - firearm_pointed, by = caseid]
 dat[, exposure_i := shift(exposure_i, type = "lag"), by = officerid_num]
 # dat[!is.na(exposure_i), exposure_i := as.integer(exposure_i > 0)]
 
 # Deferred exposure
 dat[, cumpointed := cumsum(fcoalesce(firearm_pointed, 0L)), by = officerid_num]
-dat[, exposure_d := sum(cumpointed > 0) - (cumpointed > 0), by = caseid]
+dat[, exposure_d := sum(exposure_i > 0) - (exposure_i > 0), by = caseid]
 dat[, exposure_d := shift(exposure_d, type = "lag"), by = officerid_num]
+
+# dat[, exposure_d := shift(firearm_pointed, type="lag", n = 1L), by = officerid_num]
+# dat[, exposure_d := sum(exposure_d > 0L) - (exposure_d > 0L), by = caseid]
 
 # Ever exposed:
 dat[, exposure_ever := sum(firearm_pointed) - firearm_pointed, by = caseid]
@@ -225,7 +228,7 @@ dat[clog_pointed == TRUE, .N] # 893
 
 # Subsetting data for analysis -------------------------------------------------
 
-model_data <- dat[clog_pointed == TRUE & !is.na(exposure_i) & !is.na(exposure_d),]
+model_data <- dat[clog_pointed == TRUE & (!is.na(exposure_i) | !is.na(exposure_d)),]
 
 # Dropping cases in which the number of officers is less than 2
 model_data[, nofficers2 := .N, by=caseid]
@@ -254,4 +257,10 @@ data_model[, relative_exp := fcoalesce(relative_exp, NA_real_), by = caseid]
 
 fwrite(data_model, file = "data/model_data.csv")
 
-
+dat[, table(exposure_d, exposure_i, useNA = "always")]
+# exposure_i
+# exposure_d     0     1     2     3     4     5     6
+#          0 41123   461    71    26    24     6     0
+#          1   504    49    22    14     4     2     1
+#          2    37     7     2     3     3     3     0
+#          3     5     0     0     0     0     0     0
