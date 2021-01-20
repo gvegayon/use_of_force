@@ -6,7 +6,7 @@ print.clogit_perm <- function(x, odds = TRUE, labels = NULL, out = "ascii", ...)
   cis <- t(confint(x))
 
   space_fmt <- if (out == "ascii") {
-    c("** ", "*  ", "   ", "< 0.01", "< %.2f", "\n")
+    c("** ", "*  ", "   ", "< 0.01", "  %.2f", "\n")
   } else {
     c(
       "**\\hphantom{*}",

@@ -157,6 +157,14 @@ dat[, table(consistency_female)]
 # Gender variable --------------------------------------------------------------
 dat[, table(is.na(officer_male))] # 57282 NAs
 
+# Checking if we can impute gender
+# dat[, gender := fcoalesce(
+#   officer_male,
+#   as.integer(mean(officer_male, na.rm = TRUE) > .5)
+#   ), by = officerid_num]
+# 
+# dat[, table(officer_male, gender, useNA = "always")]
+
 dat[, officer_gender_range := diff(range(officer_male, na.rm = TRUE)), by = officerid_num]
 dat[, table(is.na(officer_male), officer_gender_range)] # No case that can be fixed of NAs
 dat[, officer_gender_range := NULL]
@@ -169,6 +177,7 @@ dat[, table(is.na(officer_race), is.finite(tmp))] # No place to comple missings
 dat[, tmp := NULL]
 
 # Years of experience ----------------------------------------------------------
+
 dat[, years_range := diff(range(officer_nyears, na.rm = TRUE)), by = officerid_num]
 dat[, table(is.na(officer_nyears), is.finite(years_range))] # 78 cases that can be imputed
 setorder(dat, officerid_num, date)
@@ -191,14 +200,6 @@ dat[, table(nofficers)]
 dat[, firearm_discharge := fcoalesce(firearm_discharge, 0L)]
 dat[, firearm_pointed   := fcoalesce(firearm_pointed, 0L)]
 
-# What proportion fired or pointed a gun
-dat[, prop_fired   := sum(firearm_discharge)/.N, by = caseid]
-dat[, prop_pointed := sum(firearm_pointed)/.N, by = caseid]
-
-# Relevant for conditional logit
-dat[, clog_fired   := prop_fired > 0   & prop_fired < 1,]
-dat[, clog_pointed := prop_pointed > 0 & prop_pointed < 1,]
-
 # Lagged exposure
 setorder(dat, officerid_num, date, caseid)
 dat[, exposure_i := sum(firearm_pointed, na.rm = TRUE) - firearm_pointed, by = caseid]
@@ -206,12 +207,16 @@ dat[, exposure_i := shift(exposure_i, type = "lag"), by = officerid_num]
 # dat[!is.na(exposure_i), exposure_i := as.integer(exposure_i > 0)]
 
 # Deferred exposure
-dat[, cumpointed := cumsum(fcoalesce(firearm_pointed, 0L)), by = officerid_num]
-dat[, exposure_d := sum(exposure_i > 0) - (exposure_i > 0), by = caseid]
-dat[, exposure_d := shift(exposure_d, type = "lag"), by = officerid_num]
-
-# dat[, exposure_d := shift(firearm_pointed, type="lag", n = 1L), by = officerid_num]
-# dat[, exposure_d := sum(exposure_d > 0L) - (exposure_d > 0L), by = caseid]
+# dat[, cumpointed := cumsum(fcoalesce(firearm_pointed, 0L)), by = officerid_num]
+# dat[, exposure_d := sum(exposure_i > 0) - (exposure_i > 0), by = caseid]
+# dat[, exposure_d := shift(exposure_d, type = "lag"), by = officerid_num]
+setorder(dat, officerid_num, date, caseid)
+dat[, fap_lag := shift(firearm_pointed, type = "lag", n = 1), by = officerid_num]
+dat[, exposure_d := sum(fap_lag, na.rm = TRUE) - fap_lag, by = caseid]
+dat[, exposure_d := fifelse(is.na(fap_lag) == .N, NA_integer_, exposure_d), by = caseid]
+dat[, exposure_d := shift(exposure_d, type="lag", n=1), by = officerid_num]
+dat[, addmargins(table(exposure_i, exposure_d, useNA = "always"))]
+dat[, fap_lag := NULL]
 
 # Ever exposed:
 dat[, exposure_ever := sum(firearm_pointed) - firearm_pointed, by = caseid]
@@ -219,21 +224,27 @@ dat[, exposure_ever := cumsum(exposure_ever), by = officerid_num]
 
 # How many events?
 dat[, nevents := 1:.N, by = officerid_num]
-unique(dat[, list(clog_fired, caseid)])[,table(clog_fired)] # 29
-unique(dat[, list(clog_pointed, caseid)])[,table(clog_pointed)] # 316
-
-# How many records
-dat[clog_fired == TRUE, .N] # 93
-dat[clog_pointed == TRUE, .N] # 893
 
 # Subsetting data for analysis -------------------------------------------------
 
-model_data <- dat[clog_pointed == TRUE & (!is.na(exposure_i) | !is.na(exposure_d)),]
+model_data <- dat[!is.na(exposure_i) | !is.na(exposure_d),]
+
+# What proportion fired or pointed a gun
+model_data[, prop_fired   := sum(firearm_discharge)/.N, by = caseid]
+model_data[, prop_pointed := sum(firearm_pointed)/.N, by = caseid]
+
+# Relevant for conditional logit
+model_data[, clog_fired   := prop_fired > 0   & prop_fired < 1,]
+model_data[, clog_pointed := prop_pointed > 0 & prop_pointed < 1,]
+
+# How many records
+model_data[clog_fired == TRUE, .N] # 93
+model_data[clog_pointed == TRUE, .N] # 893
 
 # Dropping cases in which the number of officers is less than 2
 model_data[, nofficers2 := .N, by=caseid]
 
-data_model <- model_data[nofficers2 >= 2, .(
+data_model <- model_data[nofficers2 >= 2 & clog_pointed == TRUE, .(
   caseid,
   officerid_num,
   officer_male,
@@ -246,7 +257,7 @@ data_model <- model_data[nofficers2 >= 2, .(
   officer_race,
   nevents,
   town,
-  supid,
+  # supid,
   nofficers,
   nsubjects
 )]
@@ -254,6 +265,163 @@ data_model <- model_data[nofficers2 >= 2, .(
 data_model[, relative_exp := officer_nyears - mean(officer_nyears), by = caseid]
 data_model[, relative_exp := fcoalesce(relative_exp, NA_real_), by = caseid]
 # model_data[, relative_exp := which.max(officer_nyears) == 1:.N, by = caseid]
+
+# Imputing officer gender
+merge(
+  x = data_model[is.na(officer_male)],
+  y = unique(dat[,.(officerid, officerid_num)]),
+  by = "officerid_num", all.x = TRUE, all.y = FALSE
+)[,.(officerid, officerid_num)]
+
+# officerid officerid_num
+# 1:                andres_bran_paterson           536 1
+# 2:                andres_brea_paterson           536 1
+# 3:              brian_dibiasi_hamilton          1677 1
+# 4:                   c_provenzano_njsp          2107  
+# 5:          christopher_dimeo_hamilton          2711 1
+# 6:          christopher_dimeo_hamilton          2711 1
+# 7:          christopher_dimeo_hamilton          2711 1
+# 8:          christopher_dimeo_hamilton          2711 1
+# 9:        christopher_williams_madison          3027 1
+# 10:          clifford_spencer_lumberton          3064 1
+# 11:        clifford_spencer_mount holly          3064 1
+# 12:          corey_knoedler_cherry hill          3142 1
+# 13:               david_bacsik_hamilton          3839 1
+# 14:              david_belbin_paulsboro          3847 1
+# 15:       david_canica_north plainfield          3869 1
+# 16:      david_dzibela_north plainfield          3913 1
+# 17:             david_leonardi_hamilton          3997 1
+# 18:            dean_janowski_woodbridge          4190 1
+# 19: dennis_richards_gloucester township          4277 1
+# 20:            dennis_sullivan_hamilton          4288 1
+# 21:     donald_everett_north plainfield          4448 1
+# 22:              e_mcquarry_mount holly          4625  
+# 23:             edmund_ansara_millville          4708 1
+# 24:      edward_sinker_north plainfield          4828 1
+# 25:            gavin_rossner_pennsauken          5700 1
+# 26:                 harry_brock_clifton          6148 1
+# 27:         james_distelcamp_woodbridge          6791 1
+# 28:               james_rickey_hamilton          7023 1
+# 29:     jason_smith_gloucester township          7329 1
+# 30:     jason_smith_gloucester township          7329 1
+# 31:             jeffrey_galant_hamilton          7509 1
+# 32:          jeffrey_horvath_woodbridge          7528 1
+# 33:              jhad_carter_plainfield          7802 1
+# 34:            john_janowski_woodbridge          8131 1
+# 35:              joseph_dixon_millville          8851 1
+# 36:          joseph_marietta_pennsauken          8997 1
+# 37:                joseph_wilk_hamilton          9218 1
+# 38:              justin_bowman_watchung          9414 1
+# 39:              justin_vallier_clifton          9493 1
+# 40:           keith_rutherford_hamilton          9698 1
+# 41:                   l_vasta_paulsboro         10314  
+# 42:                louis_lobue_hamilton         10562 1
+# 43:             marco_grossmann_hoboken         10984 1
+# 44:           mark_straszewski_hamilton         11217 1
+# 45:         martesse_gilliam_plainfield         11262 1
+# 46:            martin_heath_cherry hill         11271 1
+# 47:     michael_diguglielmo_east orange         12005 1
+# 48:            michael_niven_woodbridge         12408 1
+# 49:       michael_terracciano_manasquan         12644 1
+# 50:          nicholas_avanzato_hamilton         12995 1
+# 51:            nicole_thigpen_paulsboro         13220 0
+# 52:                 ramie_nouh_paterson         14070 0
+# 53:             randy_colondres_clifton         14091 1
+# 54:            richard_liedtka_hamilton         14407 1
+# 55:             richard_rettzo_hamilton         14467 1
+# 56: robert_kropewnicki_north plainfield         14791 1
+# 57:           rodney_richards_paulsboro         15090 1
+# 58:           roger_fernandez_manasquan         15103 1
+# 59:                 ryan_dunne_watchung         15339 1
+# 60:                        s_brown_njsp         15484  
+# 61:          stephen_varady_cherry hill         16320 1
+# 62:         steven_ptaszynski_fairfield         16467 1
+# 63:            thomas_clugsten_hamilton         16760 1
+# 64:             thomas_ganci_woodbridge         16820 1
+# 65:              tyseme_holmes_paterson         17413  
+# 66:                w_reichert_paulsboro         17639  
+# 67:         william_petrovey_woodbridge         17991 1
+# officerid officerid_num
+
+imputed_gender <- matrix(c(536L, 1L,
+536L, 1L,
+1677L, 1L,
+# L2107,L  ,
+2711L, 1L,
+2711L, 1L,
+2711L, 1L,
+2711L, 1L,
+3027L, 1L,
+3064L, 1L,
+3064L, 1L,
+3142L, 1L,
+3839L, 1L,
+3847L, 1L,
+3869L, 1L,
+3913L, 1L,
+3997L, 1L,
+4190L, 1L,
+4277L, 1L,
+4288L, 1L,
+4448L, 1L,
+# L4625,L  ,
+4708L, 1L,
+4828L, 1L,
+5700L, 1L,
+6148L, 1L,
+6791L, 1L,
+7023L, 1L,
+7329L, 1L,
+7329L, 1L,
+7509L, 1L,
+7528L, 1L,
+7802L, 1L,
+8131L, 1L,
+8851L, 1L,
+8997L, 1L,
+9218L, 1L,
+9414L, 1L,
+9493L, 1L,
+9698L, 1L,
+# L10314,L  ,
+10562L, 1L,
+10984L, 1L,
+11217L, 1L,
+11262L, 1L,
+11271L, 1L,
+12005L, 1L,
+12408L, 1L,
+12644L, 1L,
+12995L, 1L,
+13220L, 0L,
+14070L, 0L,
+14091L, 1L,
+14407L, 1L,
+14467L, 1L,
+14791L, 1L,
+15090L, 1L,
+15103L, 1L,
+15339L, 1L,
+# L15484,L  ,
+16320L, 1L,
+16467L, 1L,
+16760L, 1L,
+16820L, 1L,
+# L17413,L  ,
+# L17639,L  ,
+17991L, 1L), byrow = TRUE, ncol = 2L, dimnames = list(NULL, c("officerid_num", "officer_male2")))
+imputed_gender <- data.table(imputed_gender)
+
+# Merging and replacing missings
+data_model <- merge(
+  x = data_model,
+  y = imputed_gender,
+  by = "officerid_num",
+  all.x = TRUE, all.y = FALSE
+)
+
+data_model[, officer_male := fcoalesce(officer_male, officer_male2)]
+data_model[, officer_male2 := NULL]
 
 fwrite(data_model, file = "data/model_data.csv")
 

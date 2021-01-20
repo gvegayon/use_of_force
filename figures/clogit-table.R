@@ -16,6 +16,13 @@ paste(
 
 print(models$models$ans_direct, labels = models$labels, out="tex")
 print(models$models$ans_indirect, labels = models$labels, out="tex")
+# print(models$models$ans_joint, labels = models$labels, out="tex")
 
-print(models$models$ans_direct_count, labels = models$labels, out="tex")
-print(models$models$ans_indirect_count, labels = models$labels, out="tex")
+# model_data[
+#   setdiff(1:.N, models$models$ans_direct$fit$na.action),
+#   table(exposure_d)
+#   ]
+# 
+# model_data[, table(exposure_i > 0, exposure_d > 0)]
+# 
+models$models

@@ -109,7 +109,7 @@ clogit_perm <- function(
 
   # Calculating confidence intervals and pvals
   pvals   <- rowMeans(t(coefs) < stats::coef(model0))
-  pvals[] <- ifelse(pvals < .5, pvals, 1 - .5)*2
+  pvals[] <- ifelse(pvals < .5, pvals, 1 - pvals)*2
 
   structure(
     list(
