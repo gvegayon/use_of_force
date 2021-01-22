@@ -202,61 +202,89 @@ dat[, firearm_pointed   := fcoalesce(firearm_pointed, 0L)]
 
 # Lagged exposure
 setorder(dat, officerid_num, date, caseid)
-dat[, exposure_i := sum(firearm_pointed, na.rm = TRUE) - firearm_pointed, by = caseid]
-dat[, exposure_i := shift(exposure_i, type = "lag"), by = officerid_num]
-# dat[!is.na(exposure_i), exposure_i := as.integer(exposure_i > 0)]
+dat[, exposure_d := sum(firearm_pointed, na.rm = TRUE) - firearm_pointed, by = caseid]
+dat[, exposure_d := shift(exposure_d, type = "lag"), by = officerid_num]
+
+# Cumulative lagged exposure
+dat[, exposure_d_cum := cumsum(fcoalesce(exposure_d, 0L)), by = officerid]
+dat[, exposure_d_cum := fifelse(is.na(exposure_d), NA_integer_, exposure_d_cum)]
 
 # Deferred exposure
 # dat[, cumpointed := cumsum(fcoalesce(firearm_pointed, 0L)), by = officerid_num]
-# dat[, exposure_d := sum(exposure_i > 0) - (exposure_i > 0), by = caseid]
-# dat[, exposure_d := shift(exposure_d, type = "lag"), by = officerid_num]
+# dat[, exposure_i:= sum(exposure_d > 0) - (exposure_d > 0), by = caseid]
+# dat[, exposure_i:= shift(exposure_i type = "lag"), by = officerid_num]
 setorder(dat, officerid_num, date, caseid)
-dat[, fap_lag := shift(firearm_pointed, type = "lag", n = 1), by = officerid_num]
-dat[, exposure_d := sum(fap_lag, na.rm = TRUE) - fap_lag, by = caseid]
-dat[, exposure_d := fifelse(is.na(fap_lag) == .N, NA_integer_, exposure_d), by = caseid]
-dat[, exposure_d := shift(exposure_d, type="lag", n=1), by = officerid_num]
-dat[, addmargins(table(exposure_i, exposure_d, useNA = "always"))]
-dat[, fap_lag := NULL]
+dat[, ccsum := cumsum(firearm_pointed), by = officerid_num]
 
-# Ever exposed:
-dat[, exposure_ever := sum(firearm_pointed) - firearm_pointed, by = caseid]
-dat[, exposure_ever := cumsum(exposure_ever), by = officerid_num]
+# Sum of individuals who have previously pointed a firearm
+dat[, exposure_i:= sum(ccsum > 0L, na.rm = TRUE) - (ccsum > 0L), by = caseid]
+
+# Correcting if all observations are null
+dat[, exposure_i:= fifelse(is.na(ccsum) == .N, NA_integer_, exposure_i), by = caseid]
+dat[, exposure_i:= shift(exposure_i, type="lag", n=1), by = officerid_num]
+# dat[, ccsum := NULL]
+
+# Cumulative lagged exposure ---------------------------------------------------
+# dat[, exposure_i_cum := cumsum(fcoalesce(exposure_i, 0L)), by = officerid]
+# dat[, exposure_i_cum := fifelse(is.na(exposure_i), NA_integer_, exposure_i_cum)]
+# 
+# dat[, addmargins(table(exposure_d, exposure_i, useNA = "always"))]
+
+# Avoiding double counting
+setorder(dat, officerid_num, date, caseid)
+dat[, officers := paste0(
+  caseid, "-", officerid_num[which(ccsum > 0)], collapse = ","
+  ), by = caseid]
+
+dat[, c("officers_cum") := (function(x, ids, id) {
+  d <- unlist(strsplit(x, ","))
+  
+  d <- data.table(
+    off  = stringr::str_extract(d, "[0-9]+$"),
+    case = stringr::str_extract(d, "^[0-9]+")
+  )
+  d <- d[complete.cases(d) & off != id[1]]
+  
+  if (nrow(d) == 0)
+    return(integer(length(ids)))
+  
+  m <- matrix(0L,nrow = length(ids), ncol=length(unique(d$off)),
+              dimnames = list(ids, unique(d$off)))
+  
+  m[cbind(d$case, d$off)] <- 1L
+  # print(m)    
+  m <- matrix(apply(m, 2, cumsum), ncol = length(ids), byrow = TRUE)
+  m[] <- m[] > 0
+# print(m)  
+  colSums(m)
+  
+})(officers, caseid, officerid_num), by = officerid_num]
+
+dat[, exposure_i_cum := shift(as.integer(officers_cum), n = 1, type = "lag"), by = officerid_num]
+dat[, table(as.integer(exposure_i_cum), exposure_i_cum)]
+
+# View(dat[officerid_num==1653, .(caseid, officers, exposure_i_cum2, exposure_i, exposure_i_cum, officerid_num)])
+
+# Subsetting data for analysis -------------------------------------------------
 
 # How many events?
 dat[, nevents := 1:.N, by = officerid_num]
 
-# Subsetting data for analysis -------------------------------------------------
-
-model_data <- dat[!is.na(exposure_i) | !is.na(exposure_d),]
-
-# What proportion fired or pointed a gun
-model_data[, prop_fired   := sum(firearm_discharge)/.N, by = caseid]
-model_data[, prop_pointed := sum(firearm_pointed)/.N, by = caseid]
-
-# Relevant for conditional logit
-model_data[, clog_fired   := prop_fired > 0   & prop_fired < 1,]
-model_data[, clog_pointed := prop_pointed > 0 & prop_pointed < 1,]
-
-# How many records
-model_data[clog_fired == TRUE, .N] # 93
-model_data[clog_pointed == TRUE, .N] # 893
-
-# Dropping cases in which the number of officers is less than 2
-model_data[, nofficers2 := .N, by=caseid]
-
-data_model <- model_data[nofficers2 >= 2 & clog_pointed == TRUE, .(
+data_model <- dat[, .(
   caseid,
   officerid_num,
   officer_male,
   firearm_pointed,
   officer_nyears,
   officer_po,
-  officer_sleo,
-  exposure_i,
+  # officer_sleo,
   exposure_d,
+  exposure_i,
+  exposure_d_cum,
+  exposure_i_cum,
   officer_race,
   nevents,
-  town,
+  # town,
   # supid,
   nofficers,
   nsubjects
@@ -415,7 +443,7 @@ imputed_gender <- data.table(imputed_gender)
 # Merging and replacing missings
 data_model <- merge(
   x = data_model,
-  y = imputed_gender,
+  y = unique(imputed_gender),
   by = "officerid_num",
   all.x = TRUE, all.y = FALSE
 )
@@ -423,11 +451,28 @@ data_model <- merge(
 data_model[, officer_male := fcoalesce(officer_male, officer_male2)]
 data_model[, officer_male2 := NULL]
 
+# Preparing for conditional logit  ---------------------------------------------
+data_model <- data_model[complete.cases(data_model)]
+
+# What proportion fired or pointed a gun
+data_model[, prop_pointed := sum(firearm_pointed)/.N, by = caseid]
+
+# Relevant for conditional logit
+data_model[, clog_pointed := prop_pointed > 0 & prop_pointed < 1,]
+
+# How many records
+data_model <- data_model[clog_pointed == TRUE] # 893
+
+# Dropping cases in which the number of officers is less than 2
+# data_model[, nofficers2 := .N, by=caseid]
+
+data_model[, c("prop_pointed", "clog_pointed") := NULL]
+
 fwrite(data_model, file = "data/model_data.csv")
 
-dat[, table(exposure_d, exposure_i, useNA = "always")]
-# exposure_i
-# exposure_d     0     1     2     3     4     5     6
+dat[, table(exposure_i, exposure_d, useNA = "always")]
+# exposure_d
+# exposure_i    0     1     2     3     4     5     6
 #          0 41123   461    71    26    24     6     0
 #          1   504    49    22    14     4     2     1
 #          2    37     7     2     3     3     3     0

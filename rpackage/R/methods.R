@@ -48,10 +48,12 @@ print.clogit_perm <- function(x, odds = TRUE, labels = NULL, out = "ascii", ...)
   # Dealing with others
   gof.names   <- c("N events", "N perm", "N", "AIC", "BIC")
   gof         <- c(x$fit$nevent, nrow(x$coefs), x$fit$n, stats::AIC(x$fit), stats::BIC(x$fit))
+  cat("\nCONDITIONAL LOGIT (WITH PERMUTATION)\n")
   cat(sprintf("%10s: %d", gof.names[1:3], gof[1:3]), sep = "\n")
   cat(sprintf("%10s: %.2f", gof.names[4:5], gof[4:5]), sep = "\n")
-
+  cat("MODEL PARAMETERS:\n")
   cat(paste(dat, collapse = space_fmt[6]))
+  cat("\n")
   invisible(x)
 
 }
