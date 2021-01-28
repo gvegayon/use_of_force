@@ -47,7 +47,7 @@ sim_events2(
 \item{min_per_event, max_per_event}{Integers. Lower and upper bounds for the
 number of officers in the event.}
 
-\item{min_year, max_years}{Integers. Lower and upper bounds for the number
+\item{min_year, max_year}{Integers. Lower and upper bounds for the number
 of years of experience of the officers.}
 
 \item{min_rate, max_rate}{Doubles. Lower and upper bounds for the reaction

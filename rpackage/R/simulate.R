@@ -8,7 +8,7 @@
 #' @param nevents,nofficers Integers. Number of events and officers to simulate.
 #' @param min_per_event,max_per_event Integers. Lower and upper bounds for the
 #' number of officers in the event.
-#' @param min_year,max_years Integers. Lower and upper bounds for the number
+#' @param min_year,max_year Integers. Lower and upper bounds for the number
 #' of years of experience of the officers.
 #' @param min_rate,max_rate Doubles. Lower and upper bounds for the reaction
 #' rates (see details).

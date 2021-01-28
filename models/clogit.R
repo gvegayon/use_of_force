@@ -17,6 +17,7 @@ model_direct <- firearm_pointed ~
   officer_male +
   officer_nyears +
   officer_nyears2 + 
+  alters_cum +
   officer_po +
   I(officer_race == "white") +
   strata(caseid)
@@ -28,9 +29,12 @@ model_indirect <- firearm_pointed ~
   officer_male +
   officer_nyears +
   officer_nyears2 + 
+  alters_cum +
   officer_po +
   I(officer_race == "white") +
   strata(caseid)
+
+# Cumuilative exposure ---------------------------------------------------------
 
 # Previous use
 model_direct_cum <- firearm_pointed ~
@@ -39,6 +43,7 @@ model_direct_cum <- firearm_pointed ~
   officer_male +
   officer_nyears +
   officer_nyears2 + 
+  alters_cum +
   officer_po +
   I(officer_race == "white") +
   strata(caseid)
@@ -49,21 +54,110 @@ model_indirect_cum <- firearm_pointed ~
   officer_male +
   officer_nyears +
   officer_nyears2 + 
+  alters_cum +
   officer_po +
   I(officer_race == "white") +
   strata(caseid)
 
-set.seed(77173)
-ans_direct <- clogit_perm(nperms, model_direct, dat = model_data, ncpus = ncpus)
+# Dummy exposure (without nevents)----------------------------------------------
 
-set.seed(77173)
-ans_indirect <- clogit_perm(nperms, model_indirect, dat = model_data, ncpus = ncpus)
+# Exposure direct
+model_direct_no_nevents <- firearm_pointed ~
+  I(as.integer(exposure_d > 0)) +
+  # nevents +
+  officer_male +
+  officer_nyears +
+  officer_nyears2 + 
+  alters_cum +
+  officer_po +
+  I(officer_race == "white") +
+  strata(caseid)
 
-set.seed(77173)
-ans_direct_cum <- clogit_perm(nperms, model_direct_cum, dat = model_data, ncpus = ncpus)
+# Exposure indirect
+model_indirect_no_nevents <- firearm_pointed ~
+  I(as.integer(exposure_i > 0)) +
+  # nevents + 
+  officer_male +
+  officer_nyears +
+  officer_nyears2 + 
+  alters_cum +
+  officer_po +
+  I(officer_race == "white") +
+  strata(caseid)
 
-set.seed(77173)
-ans_indirect_cum <- clogit_perm(nperms, model_indirect_cum, dat = model_data, ncpus = ncpus)
+# Cumuilative exposure (without nevents)----------------------------------------
+
+# Previous use
+model_direct_cum_no_nevents <- firearm_pointed ~
+  exposure_d_cum +
+  # nevents +
+  officer_male +
+  officer_nyears +
+  officer_nyears2 + 
+  alters_cum +
+  officer_po +
+  I(officer_race == "white") +
+  strata(caseid)
+
+model_indirect_cum_no_nevents <- firearm_pointed ~
+  exposure_i_cum +
+  # nevents +
+  officer_male +
+  officer_nyears +
+  officer_nyears2 + 
+  alters_cum +
+  officer_po +
+  I(officer_race == "white") +
+  strata(caseid)
+
+# Final model ------------------------------------------------------------------
+
+model_indirect_final <- firearm_pointed ~
+  I(as.integer(exposure_i > 0)) +
+  exposure_i_cum +
+  nevents +
+  officer_male +
+  officer_nyears +
+  officer_nyears2 + 
+  alters_cum +
+  officer_po +
+  I(officer_race == "white") +
+  strata(caseid)
+
+fitter <- function(nperms, model, dat, ncpus, seed = 11231) {
+  
+  # Retrieving the model name
+  mname <- match.call()$model
+  
+  # Checking if it existst
+  fn_model <- file.path("models", paste0(mname,".rds"))
+  if (!file.exists(fn_model)) {
+    
+    message("Fitting the model ", mname, "...", appendLF = FALSE)
+    set.seed(seed)
+    ans <- clogit_perm(nperms, model, dat = dat, ncpus = ncpus)
+    message("Done!")
+    saveRDS(ans, fn_model)
+    
+  } else {
+    message("Model already fitted, loading...")
+    ans <- readRDS(fn_model)
+  }
+  
+  assign(paste0("ans_", mname), value = ans, envir = .GlobalEnv)
+  invisible()
+  
+}
+
+fitter(nperms, model_direct, dat = model_data, ncpus = ncpus)
+fitter(nperms, model_indirect, dat = model_data, ncpus = ncpus)
+fitter(nperms, model_direct_cum, dat = model_data, ncpus = ncpus)
+fitter(nperms, model_indirect_cum, dat = model_data, ncpus = ncpus)
+fitter(nperms, model_direct_no_nevents, dat = model_data, ncpus = ncpus)
+fitter(nperms, model_indirect_no_nevents, dat = model_data, ncpus = ncpus)
+fitter(nperms, model_direct_cum_no_nevents, dat = model_data, ncpus = ncpus)
+fitter(nperms, model_indirect_cum_no_nevents, dat = model_data, ncpus = ncpus)
+fitter(nperms, model_indirect_final, dat = model_data, ncpus = ncpus)
 
 varnames <- list(
   'firearm_pointed',
@@ -73,9 +167,9 @@ varnames <- list(
   'I(exposure_d * officer_nyears_sd)' = "Exposure (direct) x Years of Exp.",
   'I(exposure_i * officer_nyears_sd)' = "Exposure (indirect) x Years of Exp.",
   'I(as.integer(exposure_d > 0))' = "Exposure (direct)",
-  'exposure_d' = "Exposure (direct) total",
+  'exposure_d_cum' = "Exposure (direct) cumulative",
   'I(as.integer(exposure_i > 0))' = "Exposure (indirect)",
-  'exposure_i' = "Exposure (indirect) total",
+  'exposure_i_cum' = "Exposure (indirect) cumulative",
   'officer_male' = "Sex = Male",
   'nevents' = "N of Events",
   'officer_nyears' = "Years of Exp.",
@@ -83,7 +177,8 @@ varnames <- list(
   'officer_po' = "Police Officer",
   'I(officer_race == "white")TRUE' = "Race = White",
   'strata(caseid)',
-  "relative_exp" = "Relative Exp."
+  "relative_exp" = "Relative Exp.",
+  alters_cum  = "Total number of alters"
 )
 
 saveRDS(
@@ -108,78 +203,24 @@ invisible(lapply(models$models, print, labels = models$labels))
 #       #)
 #   ]
 
-plot.clogit_perm <- function(
-  x,
-  y             = NULL,
-  level         = .95,
-  col           = 1:length(stats::coef(x)),
-  args_points   = list(pch = 19, cex = 1.5),
-  args_arrows   = list(lwd = 2, code=3, angle=90, length = .1),
-  labels        = NULL,
-  ...
-  ) {
-  
-  ci     <- stats::confint(x, level = level)
-  ranges <- range(ci)
-  ranges_extended <- ranges + c(- diff(ranges)*.75, 0)
-  betas  <- stats::coef(x)
-  
-  # Reversing order
-  betas <- rev(betas)
-  ci    <- ci[,ncol(ci):1, drop=FALSE]
-  
-  ylims <- as.factor(colnames(ci))
-  
-  graphics::plot.new()
-  graphics::plot.window(
-    xlim = ranges_extended,
-    ylim = c(1, length(ylims) + .5)
-    )
-  graphics::abline(v = 0, lty=2, lwd=1)
-  do.call(
-    graphics::arrows,
-    c(
-      args_arrows,
-      list(
-        x0 = ci[1,],
-        x1 = ci[2,],
-        y0 = 1:length(ylims),
-        # y1 = as.integer(ylims),
-        col = col
-        )
-      )
-    )
-  
-  do.call(
-    graphics::points,
-    c(
-      args_points,
-      list(x = betas, y = 1:length(ylims), col = col)
-      )
-    )
-  
-
-  labs <- if (!is.null(labels))
-    labels[as.character(ylims)]
-  else
-    as.character(ylims)
-
-  graphics::text(
-    x      = ranges_extended[1],
-    y      = 1:length(ylims) + .25,
-    labels = labs,
-    pos    = 4,
-    offset = -.5
-  )
-  
-  loc <- pretty(ranges)
-  graphics::axis(1, labels = loc, at=loc)
-  
-}
+op <- par(mai = par("mai") * c(.5, .5, .5, .5), mfrow = c(2,2))
+with(models, plot(ans_model_direct, labels = varnames))
+with(models, plot(ans_model_direct_cum, labels = varnames))
+with(models, plot(ans_model_indirect, labels = varnames))
+with(models, plot(ans_model_indirect_cum, labels = varnames))
+par(op)
 
 op <- par(mai = par("mai") * c(.5, .5, .5, .5), mfrow = c(2,2))
-with(models, plot(models$ans_direct, labels = varnames))
-with(models, plot(models$ans_direct_cum, labels = varnames))
-with(models, plot(models$ans_indirect, labels = varnames))
-with(models, plot(models$ans_indirect_cum, labels = varnames))
+with(models, plot(models$ans_direct_no_nevents, labels = varnames))
+with(models, plot(models$ans_direct_cum_no_nevents, labels = varnames))
+with(models, plot(models$ans_indirect_no_nevents, labels = varnames))
+with(models, plot(models$ans_indirect_cum_no_nevents, labels = varnames))
 par(op)
+
+op <- par(mai = par("mai") * c(.75, .5, .5, .5), mfrow = c(2,2))
+plot(ans_model_indirect, labels = varnames)
+plot(ans_model_indirect_cum, labels = varnames)
+plot(ans_model_indirect_final, labels = varnames)
+par(op)
+
+print(ans_indirect_final, labels = varnames)

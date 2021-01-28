@@ -265,6 +265,43 @@ dat[, table(as.integer(exposure_i_cum), exposure_i_cum)]
 
 # View(dat[officerid_num==1653, .(caseid, officers, exposure_i_cum2, exposure_i, exposure_i_cum, officerid_num)])
 
+# Unique alters ---------------------------------------------------
+
+# Avoiding double counting
+setorder(dat, officerid_num, date, caseid)
+dat[, officers := paste0(
+  caseid, "-", officerid_num, collapse = ","
+), by = caseid]
+
+dat[, c("alters_cum") := (function(x, ids, id) {
+  d <- unlist(strsplit(x, ","))
+  
+  d <- data.table(
+    off  = stringr::str_extract(d, "[0-9]+$"),
+    case = stringr::str_extract(d, "^[0-9]+")
+  )
+  d <- d[complete.cases(d) & off != id[1]]
+  
+  if (nrow(d) == 0)
+    return(integer(length(ids)))
+  
+  m <- matrix(0L,nrow = length(ids), ncol=length(unique(d$off)),
+              dimnames = list(ids, unique(d$off)))
+  
+  m[cbind(d$case, d$off)] <- 1L
+  # print(m)    
+  m <- matrix(apply(m, 2, cumsum), ncol = length(ids), byrow = TRUE)
+  m[] <- m[] > 0
+  # print(m)  
+  colSums(m)
+  
+})(officers, caseid, officerid_num), by = officerid_num]
+
+dat[, alters_cum := shift(as.integer(alters_cum), n = 1, type = "lag"), by = officerid_num]
+dat[, table(as.integer(exposure_i_cum), exposure_i_cum)]
+
+# View(dat[officerid_num==1653, .(caseid, officers, exposure_i, exposure_i_cum, alters_cum, officerid_num)])
+
 # Subsetting data for analysis -------------------------------------------------
 
 # How many events?
@@ -282,6 +319,7 @@ data_model <- dat[, .(
   exposure_i,
   exposure_d_cum,
   exposure_i_cum,
+  alters_cum,
   officer_race,
   nevents,
   # town,

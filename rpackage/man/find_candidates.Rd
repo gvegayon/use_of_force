@@ -10,8 +10,11 @@ find_candidates(features, upper, lower, as_abs)
 \item{features}{An integer matrix of features to be match (depending on
 the window).}
 
-\item{window}{An integer vector with length equal to the number of columns
-in \code{features}.}
+\item{upper, lower}{Integer vector indicating, for each feature, the
+upper and lower bounds.}
+
+\item{as_abs}{Logical vector of length equal to the number of features.
+When \code{TRUE} it indicates that the difference should be taken in absolute terms.}
 }
 \value{
 A list of integer vectors (starting from zero) indicating the position of
@@ -22,7 +25,7 @@ Find permutation candidates for each row
 }
 \details{
 Matches (or permutation candidates) are identified depending on the rule
-specified by \code{window}. For feature \code{k}, the match between \verb{(i,j)} is possible if
+specified by \code{upper} and \code{lower}. For feature \code{k}, the match between \verb{(i,j)} is possible if
 \itemize{
 \item If \code{window[k] < 0} and \code{features[i, k] != features[j, k]}
 \item If \code{abs(features[i, k] - features[j, k]) <= window[k]}

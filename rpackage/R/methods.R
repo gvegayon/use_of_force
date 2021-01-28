@@ -1,3 +1,9 @@
+#' Print method for clogit_perm
+#' @param odds Logical scalar. When `TRUE` it will print odds ratios.
+#' @param labels A named list for alternative labels for the model terms.
+#' @param out Character scalar. When `"ascii"` it will print for screen, otherwise,
+#' it will print for LaTeX.
+#' @param ... Ignored.
 #' @export
 #' @param odds Logical scalar. When TRUE it prints the odds ratios.
 #' @param labels Named vector. Changes the labels of the model.
@@ -55,5 +61,85 @@ print.clogit_perm <- function(x, odds = TRUE, labels = NULL, out = "ascii", ...)
   cat(paste(dat, collapse = space_fmt[6]))
   cat("\n")
   invisible(x)
+
+}
+
+#' Plot method for [clogit_perm] objects
+#' @export
+#' @param x An object of class [clogit_perm].
+#' @param y Ignored
+#' @param level Passed to [stats::confint()].
+#' @param col Vector of colors for the model terms.
+#' @param args_points List of arguments passed to [graphics::points()]
+#' @param args_arrows List of arguments passed to [graphics::arrows()]
+#' @param labels a named list with alternative labels for the model terms.
+#' @param ... Ignored
+#' @importFrom graphics points arrows plot.new plot.window abline axis text
+plot.clogit_perm <- function(
+  x,
+  y             = NULL,
+  level         = .95,
+  col           = 1:length(stats::coef(x)),
+  args_points   = list(pch = 19, cex = 1.5),
+  args_arrows   = list(lwd = 2, code=3, angle=90, length = .1),
+  labels        = NULL,
+  ...
+) {
+
+  ci     <- stats::confint(x, level = level)
+  ranges <- range(ci)
+  ranges_extended <- ranges + c(- diff(ranges)*.75, 0)
+  betas  <- stats::coef(x)
+
+  # Reversing order
+  betas <- rev(betas)
+  ci    <- ci[,ncol(ci):1, drop=FALSE]
+
+  ylims <- as.factor(colnames(ci))
+
+  graphics::plot.new()
+  graphics::plot.window(
+    xlim = ranges_extended,
+    ylim = c(1, length(ylims) + .5)
+  )
+  graphics::abline(v = 0, lty=2, lwd=1)
+  do.call(
+    graphics::arrows,
+    c(
+      args_arrows,
+      list(
+        x0 = ci[1,],
+        x1 = ci[2,],
+        y0 = 1:length(ylims),
+        # y1 = as.integer(ylims),
+        col = col
+      )
+    )
+  )
+
+  do.call(
+    graphics::points,
+    c(
+      args_points,
+      list(x = betas, y = 1:length(ylims), col = col)
+    )
+  )
+
+
+  labs <- if (!is.null(labels))
+    labels[as.character(ylims)]
+  else
+    as.character(ylims)
+
+  graphics::text(
+    x      = ranges_extended[1],
+    y      = 1:length(ylims) + .25,
+    labels = labs,
+    pos    = 4,
+    offset = -.5
+  )
+
+  loc <- pretty(ranges)
+  graphics::axis(1, labels = loc, at=loc)
 
 }

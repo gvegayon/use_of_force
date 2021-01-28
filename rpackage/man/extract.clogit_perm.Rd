@@ -12,6 +12,8 @@ extract.clogit_perm(model, level = 0.95, odds = TRUE, ...)
 \item{level}{Double. level for the CI.}
 
 \item{odds}{Logical, when \code{TRUE}, returns odds-ratios.}
+
+\item{...}{Further arguments, including \code{ci.force}.}
 }
 \description{
 Extract components for texreg objects

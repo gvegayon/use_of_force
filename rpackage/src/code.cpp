@@ -30,11 +30,13 @@ inline bool is_within_window(
 //' Find permutation candidates for each row
 //' @param features An integer matrix of features to be match (depending on
 //' the window).
-//' @param window An integer vector with length equal to the number of columns
-//' in `features`.
+//' @param upper,lower Integer vector indicating, for each feature, the
+//' upper and lower bounds.
+//' @param as_abs Logical vector of length equal to the number of features.
+//' When `TRUE` it indicates that the difference should be taken in absolute terms.
 //' @details
 //' Matches (or permutation candidates) are identified depending on the rule
-//' specified by `window`. For feature `k`, the match between `(i,j)` is possible if
+//' specified by `upper` and `lower`. For feature `k`, the match between `(i,j)` is possible if
 //'
 //' - If `window[k] < 0` and `features[i, k] != features[j, k]`
 //' - If `abs(features[i, k] - features[j, k]) <= window[k]`

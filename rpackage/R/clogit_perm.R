@@ -153,6 +153,7 @@ confint.clogit_perm <- function(object, param, level = 0.95, ...) {
 #' @param model An object of class [clogit_perm]
 #' @param level Double. level for the CI.
 #' @param odds Logical, when `TRUE`, returns odds-ratios.
+#' @param ... Further arguments, including `ci.force`.
 #' @importFrom texreg extract
 #'
 extract.clogit_perm <- function(
