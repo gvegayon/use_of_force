@@ -302,6 +302,26 @@ dat[, table(as.integer(exposure_i_cum), exposure_i_cum)]
 
 # View(dat[officerid_num==1653, .(caseid, officers, exposure_i, exposure_i_cum, alters_cum, officerid_num)])
 
+
+# Number of days since the exposure --------------------------------------------
+setorder(dat, officerid_num, date, caseid)
+
+dat[, days_since_exp_d := fifelse(
+  exposure_d > 0L, 
+  date - shift(date, type = "lag", n = 1),
+  0L
+), by = officerid_num]
+
+dat[, days_since_exp_i := fifelse(
+  exposure_i > 0L, 
+  date - shift(date, type = "lag", n = 1),
+  0L
+), by = officerid_num]
+
+  
+# dat[officerid_num==1653, .(officerid_num, caseid, date, days_since_exp_i, exposure_i, days_since_exp_d, exposure_d)]
+
+
 # Subsetting data for analysis -------------------------------------------------
 
 # How many events?
@@ -325,7 +345,9 @@ data_model <- dat[, .(
   # town,
   # supid,
   nofficers,
-  nsubjects
+  nsubjects,
+  days_since_exp_d,
+  days_since_exp_i
 )]
 
 data_model[, relative_exp := officer_nyears - mean(officer_nyears), by = caseid]

@@ -153,3 +153,5 @@ ggplot(model_data, aes(nevents)) +
     )
    # +
   facet_wrap(vars(as.factor(firearm_pointed)))
+
+knitr::kable(data.table(prop.table(table(model_data$nevents))), digits=2)

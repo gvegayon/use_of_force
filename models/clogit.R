@@ -110,6 +110,32 @@ model_indirect_cum_no_nevents <- firearm_pointed ~
   I(officer_race == "white") +
   strata(caseid)
 
+# Model with interaction on the number of days since
+# Previous use
+model_direct_interact <- firearm_pointed ~
+  I(as.integer(exposure_d > 0)) +
+  I(as.integer(exposure_d > 0) * days_since_exp_d) +
+  nevents +
+  officer_male +
+  officer_nyears +
+  officer_nyears2 + 
+  alters_cum +
+  officer_po +
+  I(officer_race == "white") +
+  strata(caseid)
+
+model_indirect_interact <- firearm_pointed ~
+  I(as.integer(exposure_i > 0)) +
+  I(as.integer(exposure_i > 0) * days_since_exp_i) +
+  nevents +
+  officer_male +
+  officer_nyears +
+  officer_nyears2 + 
+  alters_cum +
+  officer_po +
+  I(officer_race == "white") +
+  strata(caseid)
+
 # Final model ------------------------------------------------------------------
 
 model_indirect_final <- firearm_pointed ~
@@ -157,6 +183,8 @@ fitter(nperms, model_direct_no_nevents, dat = model_data, ncpus = ncpus)
 fitter(nperms, model_indirect_no_nevents, dat = model_data, ncpus = ncpus)
 fitter(nperms, model_direct_cum_no_nevents, dat = model_data, ncpus = ncpus)
 fitter(nperms, model_indirect_cum_no_nevents, dat = model_data, ncpus = ncpus)
+fitter(nperms, model_direct_interact, dat = model_data, ncpus = ncpus)
+fitter(nperms, model_indirect_interact, dat = model_data, ncpus = ncpus)
 fitter(nperms, model_indirect_final, dat = model_data, ncpus = ncpus)
 
 varnames <- list(
@@ -178,7 +206,9 @@ varnames <- list(
   'I(officer_race == "white")TRUE' = "Race = White",
   'strata(caseid)',
   "relative_exp" = "Relative Exp.",
-  alters_cum  = "Total number of alters"
+  alters_cum  = "Total number of alters",
+  "I(as.integer(exposure_d > 0) * days_since_exp_d)" = "Exposure (direct) x days since",
+  "I(as.integer(exposure_i > 0) * days_since_exp_i)" = "Exposure (indirect) x days since"
 )
 
 saveRDS(
