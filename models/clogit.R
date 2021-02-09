@@ -3,7 +3,6 @@ library(survival)
 library(njforce)
 
 model_data <- fread("data/model_data.csv", na.strings = "")
-model_data[, officer_nyears2 := (officer_nyears/10) ^ 2]
 model_data[, officer_nyears_sd := officer_nyears/sd(officer_nyears, TRUE)]
 ncpus      <- 3L
 nperms     <- 2000L

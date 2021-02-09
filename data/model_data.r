@@ -347,7 +347,9 @@ data_model <- dat[, .(
   nofficers,
   nsubjects,
   days_since_exp_d,
-  days_since_exp_i
+  days_since_exp_i,
+  county,
+  town
 )]
 
 data_model[, relative_exp := officer_nyears - mean(officer_nyears), by = caseid]
@@ -527,6 +529,9 @@ data_model <- data_model[clog_pointed == TRUE] # 893
 # data_model[, nofficers2 := .N, by=caseid]
 
 data_model[, c("prop_pointed", "clog_pointed") := NULL]
+
+# Decades
+data_model[, officer_nyears2 := (officer_nyears/10) ^ 2]
 
 fwrite(data_model, file = "data/model_data.csv")
 

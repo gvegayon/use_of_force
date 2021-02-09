@@ -2,6 +2,43 @@ library(data.table)
 library(survival)
 
 model_data <- fread("data/model_data.csv")
+all_data <- fread("data-raw/njdatageorge200918.csv")
+
+# Comparing full sample vs final sample ----------------------------------------
+
+n_final <- NULL
+n_origi <- NULL
+
+# Totals
+n_final <- c(n_final, "N observations" = nrow(model_data))
+n_origi <- c(n_origi, "N observations" = nrow(all_data))
+
+# N events
+n_final <- c(n_final, "N Events" = model_data[, length(unique(caseid))])
+n_origi <- c(n_origi, "N Events" = all_data[, length(unique(caseid))])
+
+# Unique officers
+n_final <- c(n_final, "N Officers" = model_data[, length(unique(officerid_num))])
+n_origi <- c(n_origi, "N Officers" = all_data[, length(unique(officerid_num))])
+
+# Counties
+n_final <- c(n_final, "N Counties" = model_data[, length(unique(county))])
+n_origi <- c(n_origi, "N Counties" = all_data[, length(unique(county))])
+
+print(xtable::xtable(
+  rbind("Comple sample" = n_origi, "Used sample" = n_final),
+  label   = "tab:sample-size",
+  caption = paste(
+    "Complete vs used sample. For the analysis, we only included events in which",
+    "there were two or more officers. Furthermore, ",
+    "events in which none or all officers pointed their firearm",
+    "were excluded."
+  )
+), booktabs=TRUE,
+)
+
+# Final sample -----------------------------------------------------------------
+
 
 model_data[, lapply(.SD, function(i) sum(is.na(i)))]
 
@@ -22,6 +59,7 @@ sstats <- model_data[,
                      .(
                        "Sex = Male"                      = summarizer(officer_male, TRUE),
                        "Years of Exp."                   = summarizer(officer_nyears, FALSE),
+                       "Decades of Exp.^2"               = summarizer(officer_nyears2, FALSE),
                        "Exposure (direct)"               = summarizer(exposure_d > 0, TRUE),
                        "Exposure (direct) cumulative"    = summarizer(exposure_d_cum, FALSE),
                        "Exposure (indirect)"             = summarizer(exposure_i > 0, TRUE),
@@ -29,6 +67,7 @@ sstats <- model_data[,
                        "Race = White"                    = summarizer(officer_race == "white", TRUE),
                        "Police Officer = Yes"            = summarizer(officer_po, TRUE),
                        "N Officers"                      = summarizer(nofficers, FALSE),
+                       "N of peers"                      = summarizer(alters_cum, FALSE),
                        "N Events"                        = summarizer(nevents, FALSE),
                        "N observations"                  = .N
                      ), by = firearm_pointed
@@ -48,6 +87,7 @@ print(xtable(sstats[-1,]), booktabs = TRUE, file = "figures/summary-stats.tex")
 # Comparing raw differences (prop tests)
 model_data[, prop.test(table(firearm_pointed, officer_male == 1))]
 model_data[, wilcox.test(officer_nyears ~ firearm_pointed)] # Not normal, so need to assume wilcox
+model_data[, wilcox.test(officer_nyears2 ~ firearm_pointed)] # Not normal, so need to assume wilcox
 model_data[, prop.test(table(firearm_pointed, exposure_d > 0))]
 model_data[, wilcox.test(exposure_d_cum ~ firearm_pointed)]
 model_data[, prop.test(table(firearm_pointed, exposure_i > 0))]
@@ -57,6 +97,7 @@ model_data[, prop.test(table(firearm_pointed, officer_race == "white"))]
 model_data[, prop.test(table(firearm_pointed, officer_po))]
 model_data[, wilcox.test(nofficers ~ firearm_pointed, alternative = "two.sided")] # Not normal, so need to assume wilcox
 model_data[, wilcox.test(nevents ~ firearm_pointed, alternative = "two.sided")] # Not normal, so need to assume wilcox
+model_data[, wilcox.test(alters_cum ~ firearm_pointed, alternative = "two.sided")] # Not normal, so need to assume wilcox
 
 # 
 # 2-sample test for equality of proportions with continuity correction
