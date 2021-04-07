@@ -1,4 +1,4 @@
-library(njforce)
+library(mc3logit)
 
 library(data.table)
 
@@ -18,18 +18,15 @@ colnames(reports)[2] <- "officerid"
 complete <- complete.cases(reports[, c("incidentid", "officerid", "officer_male", "officer_nyears")])
 reports <- reports[which(complete),]#[1:500,]
 
-# ans <- simulate_njforce(100, 10)
-# stop("asdas")
 
-ans <- simulate_njforce2(
-  incidentid = as.integer(reports$incidentid),
-  officerid  = as.integer(reports$officerid),
-  female     = as.logical(1 - reports$officer_male),
-  years      = as.integer(floor(reports$officer_nyears)),
-  female_par = -.5,
-  years_par  = -.5,
-  rho_par    = .5,
-  exposure_par = .5,
+ans <- sim_events2(
+  event_id       = as.integer(reports$incidentid),
+  officer_id     = as.integer(reports$officerid), 
+  officer_female = as.logical(1 - reports$officer_male),
+  officer_years  = as.integer(floor(reports$officer_nyears)),
+  par_officer_female = -.5,
+  par_officer_years  = -.5,
+  par_officer_exposure = .5,
   seed         = 123
 )
 

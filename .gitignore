@@ -3,5 +3,15 @@
 *.dta
 *.rda
 *.rds
+reports/
 
+*.Rout
+*.pdf
+
+.Rhistory
+*.docx
+.*
+*.Rcheck
+*.tar.gz
+*_cache/
 .Rproj.user

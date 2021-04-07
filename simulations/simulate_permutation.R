@@ -66,7 +66,7 @@ cl <- slurmR::makeSlurmCluster(100, job_name = "permutation-george")
 # cl <- parallel::makePSOCKcluster(4)
 
 invisible(parallel::clusterEvalQ(cl, {
-  library(njforce)
+  library(mc3logit)
 }))
 parallel::clusterExport(cl, c("datagen", "nobs", "nperm", "permutation_test"))
 parallel::clusterSetRNGStream(cl, 12331)

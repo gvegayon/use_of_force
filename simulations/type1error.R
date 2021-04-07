@@ -1,4 +1,4 @@
-library(njforce)
+library(mc3logit)
 library(data.table)
 
 nevents   <- 700
@@ -36,7 +36,7 @@ Matrix::image(mat, useRaster = TRUE, aspect = "fill")
 permtest <- function(model, vars, dat) {
   
   # Get the permutations
-  candidates <- njforce::find_candidates(
+  candidates <- mc3logit::find_candidates(
     features = dat[,vars], 
     upper = rep(0, length(vars)),
     lower = rep(0, length(vars)),

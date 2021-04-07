@@ -1,5 +1,5 @@
 library(texreg)
-library(njforce)
+library(mc3logit)
 
 models <- readRDS("models/clogit.rds")
 
