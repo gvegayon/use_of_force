@@ -45,7 +45,6 @@ inline bool is_within_window(
 //' A list of integer vectors (starting from zero) indicating the position of
 //' the potential permutation.
 //' @export
-//' @useDynLib njforce, .registration = TRUE
 //' @importFrom Rcpp sourceCpp
 // [[Rcpp::export]]
 std::vector< std::vector<int> > find_candidates(

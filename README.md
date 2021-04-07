@@ -22,6 +22,13 @@ The structure of the project follows:
 
 - texreg: For tabulating results
 
+You will also need to install the R package `mc3logit` which can be found in [rpackage]:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("gvegayon/use_of_force", subdir = "rpackage")
+```
+
 # Funding
 
 -

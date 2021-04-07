@@ -135,89 +135,89 @@ vcov.clogit_perm <- function(object, ...) cov(object$coefs)
 formula.clogit_perm <- function(x, ...) x$formula
 
 #' @export
-confint.clogit_perm <- function(object, param, level = 0.95, ...) {
+confint.clogit_perm <- function(object, parm, level = 0.95, ...) {
 
-  if (missing(param))
-    param <- 1:ncol(object$coefs)
+  if (missing(parm))
+    parm <- 1:ncol(object$coefs)
 
   apply(
-    object$coefs[, param, drop=FALSE], 2,
+    object$coefs[, parm, drop=FALSE], 2,
     stats::quantile,
     probs = c(0, 1) + c(1, -1)*(1 - level)/2
     )
 
 }
 
-#' Extract components for texreg objects
-#' @export
-#' @param model An object of class [clogit_perm]
-#' @param level Double. level for the CI.
-#' @param odds Logical, when `TRUE`, returns odds-ratios.
-#' @param ... Further arguments, including `ci.force`.
-#' @importFrom texreg extract
+#' #' Extract components for texreg objects
+#' #' @export
+#' #' @param model An object of class [clogit_perm]
+#' #' @param level Double. level for the CI.
+#' #' @param odds Logical, when `TRUE`, returns odds-ratios.
+#' #' @param ... Further arguments, including `ci.force`.
+#' #' @importFrom texreg extract
+#' #'
+#' extract.clogit_perm <- function(
+#'   model,
+#'   level = 0.95,
+#'   odds = TRUE,
+#'   # include.aic = TRUE,
+#'   # include.bic = TRUE,
+#'   # include.loglik = TRUE,
+#'   # include.nnets = TRUE,
+#'   # include.offset = TRUE,
+#'   # include.convergence = TRUE,
+#'   # include.timing      = TRUE,
+#'   ...
+#' ) {
 #'
-extract.clogit_perm <- function(
-  model,
-  level = 0.95,
-  odds = TRUE,
-  # include.aic = TRUE,
-  # include.bic = TRUE,
-  # include.loglik = TRUE,
-  # include.nnets = TRUE,
-  # include.offset = TRUE,
-  # include.convergence = TRUE,
-  # include.timing      = TRUE,
-  ...
-) {
-
-  # Capturing arguments
-  dots <- list(...)
-
-  coefficient.names <- colnames(model$coefs)
-  coefficients      <- stats::coef(model)
-  standard.errors   <- sqrt(diag(stats::vcov(model)))
-  significance      <- model$pvals
-
-  # GOF
-  gof.names   <- c("N events", "N perm", "N", "AIC", "BIC")
-  gof         <- c(model$fit$nevent, nrow(model$coefs), model$fit$n, stats::AIC(model$fit), stats::BIC(model$fit))
-  gof.decimal <- c(FALSE, FALSE, FALSE, TRUE, TRUE)
-
-  # Confidence intervals,
-  if (length(dots$ci.force) && dots$ci.force) {
-    cis_l <- apply(model$coefs, 2, quantile, probs = c(0,1) + c((1-level)/2)*c(1,-1))
-    cis_u <- cis_l[2,]
-    cis_l <- cis_l[1,]
-
-  } else {
-    cis_l <- numeric(0)
-    cis_u <- numeric(0)
-  }
-
-  if (odds) {
-    coefficients <- exp(coefficients)
-    cis_u <- exp(cis_u)
-    cis_l <- exp(cis_l)
-  }
-
-
-  return(
-    texreg::createTexreg(
-      coef.names  = coefficient.names,
-      coef        = coefficients,
-      se          = standard.errors,
-      pvalues     = significance ,
-      gof.names   = gof.names,
-      gof         = gof,
-      gof.decimal = gof.decimal,
-      ci.low      = cis_l,
-      ci.up       = cis_u
-    )
-  )
-
-}
-
-setMethod(
-  "extract", signature = className("clogit_perm", "njforce"),
-  definition = extract.clogit_perm
-)
+#'   # Capturing arguments
+#'   dots <- list(...)
+#'
+#'   coefficient.names <- colnames(model$coefs)
+#'   coefficients      <- stats::coef(model)
+#'   standard.errors   <- sqrt(diag(stats::vcov(model)))
+#'   significance      <- model$pvals
+#'
+#'   # GOF
+#'   gof.names   <- c("N events", "N perm", "N", "AIC", "BIC")
+#'   gof         <- c(model$fit$nevent, nrow(model$coefs), model$fit$n, stats::AIC(model$fit), stats::BIC(model$fit))
+#'   gof.decimal <- c(FALSE, FALSE, FALSE, TRUE, TRUE)
+#'
+#'   # Confidence intervals,
+#'   if (length(dots$ci.force) && dots$ci.force) {
+#'     cis_l <- apply(model$coefs, 2, quantile, probs = c(0,1) + c((1-level)/2)*c(1,-1))
+#'     cis_u <- cis_l[2,]
+#'     cis_l <- cis_l[1,]
+#'
+#'   } else {
+#'     cis_l <- numeric(0)
+#'     cis_u <- numeric(0)
+#'   }
+#'
+#'   if (odds) {
+#'     coefficients <- exp(coefficients)
+#'     cis_u <- exp(cis_u)
+#'     cis_l <- exp(cis_l)
+#'   }
+#'
+#'
+#'   return(
+#'     texreg::createTexreg(
+#'       coef.names  = coefficient.names,
+#'       coef        = coefficients,
+#'       se          = standard.errors,
+#'       pvalues     = significance ,
+#'       gof.names   = gof.names,
+#'       gof         = gof,
+#'       gof.decimal = gof.decimal,
+#'       ci.low      = cis_l,
+#'       ci.up       = cis_u
+#'     )
+#'   )
+#'
+#' }
+#'
+#' setMethod(
+#'   "extract", signature = className("clogit_perm", "njforce"),
+#'   definition = extract.clogit_perm
+#' )

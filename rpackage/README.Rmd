@@ -1,0 +1,61 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# mc3logit: Matched Case-Control Conditional Logit
+
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
+
+The `mc3logit` package implements permutation-based inference for conditional logistic regression models. Permutation-based methods for matched case-control logit were notably used by Ridgeway (2016).
+
+## Installation
+
+<!-- You can install the released version of mc3logit from [CRAN](https://CRAN.R-project.org) with: -->
+
+<!-- ``` r -->
+<!-- install.packages("mc3logit") -->
+<!-- ``` -->
+
+You can install `mc3logit` from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("gvegayon/use_of_force", subdir = "rpackage")
+```
+
+## Example
+
+This is a basic example which shows you how to solve a common problem:
+
+```{r sim-fit, cache=TRUE}
+library(mc3logit)
+
+# Simulating data
+x <- sim_events(200, 300, seed = 122)
+
+# Fitting
+ans <- clogit_perm(
+  nperm = 1000,
+  pointed000001 ~ female + years + exposed + strata(incidentid),
+  data = x
+  )
+```
+
+```{r print-plot}
+print(ans)
+plot(ans)
+```
+

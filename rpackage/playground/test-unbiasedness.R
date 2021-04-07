@@ -8,7 +8,7 @@ datagen <- function(nobs) {
   y <- as.integer(
     runif(nobs) < plogis(-.5 + x0*.3 - x1 * .3)
   )
-  
+
   data.frame(cbind(y, x0, x1, x2 = rnorm(nobs)))
 }
 
@@ -20,7 +20,7 @@ summary(glm(y ~ x0 + x1 + x2, family = binomial("logit"), data=d))
 
 # Are the candidates drawn in an uniform fashion? To test for this, we compare this to a
 # Binomial random variable, Y ~ Binom(nperm, 1/nmatches)
-library(njforce)
+library(mc3logit)
 p <- find_candidates(as.matrix(d[,2,drop=FALSE]), 0, 0, TRUE)
 set.seed(131)
 perm <- replicate(4e3, permute(p), simplify = FALSE)

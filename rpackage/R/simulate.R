@@ -12,7 +12,7 @@
 #' of years of experience of the officers.
 #' @param min_rate,max_rate Doubles. Lower and upper bounds for the reaction
 #' rates (see details).
-#' @param par_officer_female,par_officer_years,par_exposure_event,par_exposure_prev
+#' @param par_officer_female,par_officer_years,par_exposure_event,par_exposure_prev,par_event_violence,par_officer_fe
 #' Doubles. Parameters (coefficients) for the logistic probabilities.
 #' @param seed Integer. Seed for the pseudo-number generation.
 #' @param nsims Integer. When greater than 1, the program will simulate multiple
@@ -137,16 +137,17 @@ sim_events <- function(
 
 
 #' @export
-#' @param incidentid,officerid Integer vectors. Values for the incident and
+#' @param event_id,officer_id Integer vectors. Values for the incident and
 #' officer id.
-#' @param female,years Logical and integer vectors, respectively. Features
+#' @param officer_female,officer_years Logical and integer vectors, respectively. Features
 #' of the officers.
+#' @param officer_fe,officer_rate Double vectors, more features of the officers.
 #' @rdname sim_events
 #' @details
 #' In the case of `sim_events2`, the user can pass predefined events and
 #' officers and use those to simulate each officers' reactions.
 #' @importFrom Rcpp sourceCpp
-#' @useDynLib njforce, .registration = TRUE
+#' @useDynLib mc3logit, .registration = TRUE
 sim_events2 <- function(
   event_id,
   officer_id,

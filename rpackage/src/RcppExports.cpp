@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // find_candidates
 std::vector< std::vector<int> > find_candidates(const IntegerMatrix& features, const IntegerVector& upper, const IntegerVector& lower, const LogicalVector& as_abs);
-RcppExport SEXP _njforce_find_candidates(SEXP featuresSEXP, SEXP upperSEXP, SEXP lowerSEXP, SEXP as_absSEXP) {
+RcppExport SEXP _mc3logit_find_candidates(SEXP featuresSEXP, SEXP upperSEXP, SEXP lowerSEXP, SEXP as_absSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -21,7 +21,7 @@ END_RCPP
 }
 // permute
 std::vector< unsigned int > permute(const std::vector< std::vector< unsigned int > >& candidates);
-RcppExport SEXP _njforce_permute(SEXP candidatesSEXP) {
+RcppExport SEXP _mc3logit_permute(SEXP candidatesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -32,7 +32,7 @@ END_RCPP
 }
 // sim_events
 std::vector< std::vector< double > > sim_events(int nevents, int nofficers, int min_per_event, int max_per_event, int min_year, int max_year, int min_rate, int max_rate, double par_officer_female, double par_officer_years, double par_exposure_event, double par_exposure_prev, double par_event_violence, double par_officer_fe, int nsims, int seed);
-RcppExport SEXP _njforce_sim_events(SEXP neventsSEXP, SEXP nofficersSEXP, SEXP min_per_eventSEXP, SEXP max_per_eventSEXP, SEXP min_yearSEXP, SEXP max_yearSEXP, SEXP min_rateSEXP, SEXP max_rateSEXP, SEXP par_officer_femaleSEXP, SEXP par_officer_yearsSEXP, SEXP par_exposure_eventSEXP, SEXP par_exposure_prevSEXP, SEXP par_event_violenceSEXP, SEXP par_officer_feSEXP, SEXP nsimsSEXP, SEXP seedSEXP) {
+RcppExport SEXP _mc3logit_sim_events(SEXP neventsSEXP, SEXP nofficersSEXP, SEXP min_per_eventSEXP, SEXP max_per_eventSEXP, SEXP min_yearSEXP, SEXP max_yearSEXP, SEXP min_rateSEXP, SEXP max_rateSEXP, SEXP par_officer_femaleSEXP, SEXP par_officer_yearsSEXP, SEXP par_exposure_eventSEXP, SEXP par_exposure_prevSEXP, SEXP par_event_violenceSEXP, SEXP par_officer_feSEXP, SEXP nsimsSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< int >::type nevents(neventsSEXP);
@@ -57,7 +57,7 @@ END_RCPP
 }
 // sim_events2
 std::vector<std::vector<double>> sim_events2(std::vector< int > event_id, std::vector< int > officer_id, std::vector< bool > officer_female, std::vector< double > officer_rate, std::vector< double > officer_fe, std::vector< int > officer_years, double par_officer_female, double par_officer_years, double par_exposure_event, double par_exposure_prev, double par_event_violence, double par_officer_fe, int nsims, int seed);
-RcppExport SEXP _njforce_sim_events2(SEXP event_idSEXP, SEXP officer_idSEXP, SEXP officer_femaleSEXP, SEXP officer_rateSEXP, SEXP officer_feSEXP, SEXP officer_yearsSEXP, SEXP par_officer_femaleSEXP, SEXP par_officer_yearsSEXP, SEXP par_exposure_eventSEXP, SEXP par_exposure_prevSEXP, SEXP par_event_violenceSEXP, SEXP par_officer_feSEXP, SEXP nsimsSEXP, SEXP seedSEXP) {
+RcppExport SEXP _mc3logit_sim_events2(SEXP event_idSEXP, SEXP officer_idSEXP, SEXP officer_femaleSEXP, SEXP officer_rateSEXP, SEXP officer_feSEXP, SEXP officer_yearsSEXP, SEXP par_officer_femaleSEXP, SEXP par_officer_yearsSEXP, SEXP par_exposure_eventSEXP, SEXP par_exposure_prevSEXP, SEXP par_event_violenceSEXP, SEXP par_officer_feSEXP, SEXP nsimsSEXP, SEXP seedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::traits::input_parameter< std::vector< int > >::type event_id(event_idSEXP);
@@ -80,14 +80,14 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_njforce_find_candidates", (DL_FUNC) &_njforce_find_candidates, 4},
-    {"_njforce_permute", (DL_FUNC) &_njforce_permute, 1},
-    {"_njforce_sim_events", (DL_FUNC) &_njforce_sim_events, 16},
-    {"_njforce_sim_events2", (DL_FUNC) &_njforce_sim_events2, 14},
+    {"_mc3logit_find_candidates", (DL_FUNC) &_mc3logit_find_candidates, 4},
+    {"_mc3logit_permute", (DL_FUNC) &_mc3logit_permute, 1},
+    {"_mc3logit_sim_events", (DL_FUNC) &_mc3logit_sim_events, 16},
+    {"_mc3logit_sim_events2", (DL_FUNC) &_mc3logit_sim_events2, 14},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_njforce(DllInfo *dll) {
+RcppExport void R_init_mc3logit(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

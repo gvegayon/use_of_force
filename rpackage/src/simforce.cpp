@@ -304,7 +304,7 @@ public:
 
 };
 
-class Simulation {
+class ForceSim {
 public:
 
   unsigned int nevents;
@@ -320,7 +320,7 @@ public:
   Events events;
   Officers officers;
 
-  Simulation(
+  ForceSim(
     Vec< int >    & event_id,
     Vec< int >    & officer_id,
     Vec< bool >   & officer_female,
@@ -336,7 +336,7 @@ public:
     int             seed_
   );
 
-  Simulation(
+  ForceSim(
     unsigned int nevents_,
     unsigned int nofficers_,
     unsigned int min_per_event_,
@@ -389,7 +389,7 @@ public:
 
 };
 
-inline Simulation::Simulation(
+inline ForceSim::ForceSim(
     Vec< int >    & event_id,
     Vec< int >    & officer_id,
     Vec< bool >   & officer_female,
@@ -453,7 +453,7 @@ inline Simulation::Simulation(
 
 }
 
-inline Simulation::Simulation(
+inline ForceSim::ForceSim(
     unsigned int nevents_,
     unsigned int nofficers_,
     unsigned int min_per_event_,
@@ -524,7 +524,7 @@ params(female_, years_, rho_, exposure_, context_, fixed_effect_) {
 
 }
 
-Vec< Vec< double > > Simulation::get_data(bool byrow) {
+Vec< Vec< double > > ForceSim::get_data(bool byrow) {
 
   // Writing the reports
   Vec< Vec<double> > ans;
@@ -572,7 +572,7 @@ Vec< Vec< double > > Simulation::get_data(bool byrow) {
 
 }
 
-inline Vec< double > Simulation::get_response() {
+inline Vec< double > ForceSim::get_response() {
 
   Vec< double > res;
   for (unsigned int i = 0u; i < events.size(); ++i)
@@ -628,7 +628,7 @@ inline Vec< double > Simulation::get_response() {
 // Each row represents one report per officer involved in the event.
 // @export
 // @examples
-// x <- simulate_njforce(1000, 400)
+// x <- simulate_force(1000, 400)
 // [[Rcpp::export(rng = false, name = "sim_events_cpp")]]
 std::vector< std::vector< double > > sim_events(
   int nevents,
@@ -650,7 +650,7 @@ std::vector< std::vector< double > > sim_events(
 ) {
 
   // Preparing the simulation object
-  Simulation sim(
+  ForceSim sim(
       nevents, nofficers, min_per_event, max_per_event,
       min_year, max_year, min_rate, max_rate, par_officer_female, par_officer_years,
       par_exposure_event, par_exposure_prev, par_event_violence, par_officer_fe,
@@ -693,7 +693,7 @@ std::vector<std::vector<double>> sim_events2(
 ) {
 
   // Creating the simulation object
-  Simulation sim(
+  ForceSim sim(
       event_id, officer_id, officer_female, officer_rate, officer_fe,
       officer_years, par_officer_female, par_officer_years, par_exposure_event,
       par_exposure_prev, par_event_violence, par_officer_fe, seed
@@ -717,7 +717,7 @@ std::vector<std::vector<double>> sim_events2(
 }
 
 /***R
-ans <- simulate_njforce(10000, 1000, rho = 1, exposure = 1)
+ans <- simulate_force(10000, 1000, rho = 1, exposure = 1)
 
 summary(glm(pointed ~ -1 + female + years, data = ans, family = binomial("logit")))
 */

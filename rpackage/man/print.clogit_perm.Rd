@@ -7,6 +7,8 @@
 \method{print}{clogit_perm}(x, odds = TRUE, labels = NULL, out = "ascii", ...)
 }
 \arguments{
+\item{x}{An object of class \link{clogit_perm}.}
+
 \item{odds}{Logical scalar. When TRUE it prints the odds ratios.}
 
 \item{labels}{Named vector. Changes the labels of the model.}

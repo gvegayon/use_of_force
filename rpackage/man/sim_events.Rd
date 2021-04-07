@@ -53,7 +53,7 @@ of years of experience of the officers.}
 \item{min_rate, max_rate}{Doubles. Lower and upper bounds for the reaction
 rates (see details).}
 
-\item{par_officer_female, par_officer_years, par_exposure_event, par_exposure_prev}{Doubles. Parameters (coefficients) for the logistic probabilities.}
+\item{par_officer_female, par_officer_years, par_exposure_event, par_exposure_prev, par_event_violence, par_officer_fe}{Doubles. Parameters (coefficients) for the logistic probabilities.}
 
 \item{nsims}{Integer. When greater than 1, the program will simulate multiple
 datasets, using the same set of parameters and individual's features, and
@@ -61,11 +61,13 @@ append the corresponding results to the end of data frame.}
 
 \item{seed}{Integer. Seed for the pseudo-number generation.}
 
-\item{incidentid, officerid}{Integer vectors. Values for the incident and
+\item{event_id, officer_id}{Integer vectors. Values for the incident and
 officer id.}
 
-\item{female, years}{Logical and integer vectors, respectively. Features
+\item{officer_female, officer_years}{Logical and integer vectors, respectively. Features
 of the officers.}
+
+\item{officer_fe, officer_rate}{Double vectors, more features of the officers.}
 }
 \value{
 A data frame with the following columns

@@ -1,4 +1,5 @@
 #' Print method for clogit_perm
+#' @param x An object of class [clogit_perm].
 #' @param odds Logical scalar. When `TRUE` it will print odds ratios.
 #' @param labels A named list for alternative labels for the model terms.
 #' @param out Character scalar. When `"ascii"` it will print for screen, otherwise,
@@ -7,6 +8,7 @@
 #' @export
 #' @param odds Logical scalar. When TRUE it prints the odds ratios.
 #' @param labels Named vector. Changes the labels of the model.
+#' @importFrom stats coef confint cov
 print.clogit_perm <- function(x, odds = TRUE, labels = NULL, out = "ascii", ...) {
 
   cis <- t(confint(x))
@@ -57,7 +59,7 @@ print.clogit_perm <- function(x, odds = TRUE, labels = NULL, out = "ascii", ...)
   cat("\nCONDITIONAL LOGIT (WITH PERMUTATION)\n")
   cat(sprintf("%10s: %d", gof.names[1:3], gof[1:3]), sep = "\n")
   cat(sprintf("%10s: %.2f", gof.names[4:5], gof[4:5]), sep = "\n")
-  cat("MODEL PARAMETERS:\n")
+  cat(sprintf("MODEL PARAMETERS (%s):\n", ifelse(odds, "odds", "betas")))
   cat(paste(dat, collapse = space_fmt[6]))
   cat("\n")
   invisible(x)
