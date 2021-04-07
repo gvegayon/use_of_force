@@ -22,7 +22,7 @@ The structure of the project follows:
 
 - texreg: For tabulating results
 
-You will also need to install the R package `mc3logit` which can be found in [rpackage]:
+You will also need to install the R package `mc3logit` which can be found in [rpackage/](rpackage):
 
 ``` r
 # install.packages("devtools")
