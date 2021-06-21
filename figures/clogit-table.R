@@ -14,8 +14,8 @@ paste(
   "The last column corresponds to a logistic regression."
 ) #, odds = TRUE, ci.force = TRUE, single.row = TRUE)
 
-print(models$models$ans_direct, labels = models$labels, out="tex")
-print(models$models$ans_indirect, labels = models$labels, out="tex")
+print(models$models$ans_model_direct_cum, labels = models$labels, out="tex")
+print(models$models$ans_model_indirect_cum, labels = models$labels, out="tex")
 # print(models$models$ans_joint, labels = models$labels, out="tex")
 
 # model_data[
@@ -25,4 +25,4 @@ print(models$models$ans_indirect, labels = models$labels, out="tex")
 # 
 # model_data[, table(exposure_i > 0, exposure_d > 0)]
 # 
-models$models
+# models$models

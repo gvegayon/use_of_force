@@ -3,6 +3,7 @@
 S3method(coef,clogit_perm)
 S3method(confint,clogit_perm)
 S3method(formula,clogit_perm)
+S3method(nobs,clogit_perm)
 S3method(plot,clogit_perm)
 S3method(print,clogit_perm)
 S3method(vcov,clogit_perm)

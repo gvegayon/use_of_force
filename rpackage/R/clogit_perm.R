@@ -135,17 +135,40 @@ vcov.clogit_perm <- function(object, ...) cov(object$coefs)
 formula.clogit_perm <- function(x, ...) x$formula
 
 #' @export
-confint.clogit_perm <- function(object, parm, level = 0.95, ...) {
+nobs.clogit_perm <- function(object, ...) {
+  stats::nobs(object$fit)
+}
+
+#' @export
+#' @param which. When `"coef"`, it will generate the confidence interval for the
+#' parameter estimates, otherwise it generates the confidence interval of the reference
+#' distribution.
+confint.clogit_perm <- function(object, parm, level = 0.95, which. = "coef",...) {
 
   if (missing(parm))
     parm <- 1:ncol(object$coefs)
+  
+  if (which. == "coef") {
+    
+    coe   <- coef(object)
+    df    <- stats::nobs(object) - length(coe)
+    sigma <- abs(coe/qt(object$pvals/2, df = df))
+    a     <- (1 - level)/2
+    pm    <- qt(p = a, df = df) * sigma
+    
+    ans <- cbind(coe + pm, coe - pm)
+    colnames(ans) <- sprintf("%.1f %%", c(a, 1 - a)*100)
+    ans
+    
+  } else {
 
-  apply(
-    object$coefs[, parm, drop=FALSE], 2,
-    stats::quantile,
-    probs = c(0, 1) + c(1, -1)*(1 - level)/2
-    )
-
+    t(apply(
+      object$coefs[, parm, drop=FALSE], 2,
+      stats::quantile,
+      probs = c(0, 1) + c(1, -1)*(1 - level)/2
+      ))
+  }
+  
 }
 
 #' #' Extract components for texreg objects

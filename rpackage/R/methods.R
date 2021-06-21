@@ -11,7 +11,7 @@
 #' @importFrom stats coef confint cov
 print.clogit_perm <- function(x, odds = TRUE, labels = NULL, out = "ascii", ...) {
 
-  cis <- t(confint(x))
+  cis <- confint(x)
 
   space_fmt <- if (out == "ascii") {
     c("** ", "*  ", "   ", "< 0.01", "  %.2f", "\n")
@@ -66,6 +66,22 @@ print.clogit_perm <- function(x, odds = TRUE, labels = NULL, out = "ascii", ...)
 
 }
 
+approx_sd <- function(b, pval) {
+
+  f <- function(s) {
+    p <- pnorm(b, mean = 0, sd = s)
+    p <- ifelse(p > .1, 1 - p, p)
+    (pval - p)^2
+  }
+
+  stats::optim(
+    par = 1, fn = f, control = list(fnscale = -1),
+    method = "Brent",
+    lower = .Machine$double.eps,
+    upper = .Machine$double.xmax
+    )
+}
+
 #' Plot method for [clogit_perm] objects
 #' @export
 #' @param x An object of class [clogit_perm].
@@ -95,7 +111,7 @@ plot.clogit_perm <- function(
 
   # Reversing order
   betas <- rev(betas)
-  ci    <- ci[,ncol(ci):1, drop=FALSE]
+  ci    <- ci[nrow(ci):1, , drop=FALSE]
 
   ylims <- as.factor(colnames(ci))
 
@@ -110,8 +126,8 @@ plot.clogit_perm <- function(
     c(
       args_arrows,
       list(
-        x0 = ci[1,],
-        x1 = ci[2,],
+        x0 = ci[,1],
+        x1 = ci[,2],
         y0 = 1:length(ylims),
         # y1 = as.integer(ylims),
         col = col

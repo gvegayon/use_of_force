@@ -198,11 +198,11 @@ dat[, table(nofficers)]
 
 # These variables are equal to one if "yes" and NA otherwise
 dat[, firearm_discharge := fcoalesce(firearm_discharge, 0L)]
-dat[, firearm_pointed   := fcoalesce(firearm_pointed, 0L)]
+dat[, firearm_used      := fcoalesce(firearm_used, 0L)]
 
 # Lagged exposure
 setorder(dat, officerid_num, date, caseid)
-dat[, exposure_d := sum(firearm_pointed, na.rm = TRUE) - firearm_pointed, by = caseid]
+dat[, exposure_d := sum(firearm_used, na.rm = TRUE) - firearm_used, by = caseid]
 dat[, exposure_d := shift(exposure_d, type = "lag"), by = officerid_num]
 
 # Cumulative lagged exposure
@@ -210,11 +210,11 @@ dat[, exposure_d_cum := cumsum(fcoalesce(exposure_d, 0L)), by = officerid]
 dat[, exposure_d_cum := fifelse(is.na(exposure_d), NA_integer_, exposure_d_cum)]
 
 # Deferred exposure
-# dat[, cumpointed := cumsum(fcoalesce(firearm_pointed, 0L)), by = officerid_num]
+# dat[, cumpointed := cumsum(fcoalesce(firearm_used, 0L)), by = officerid_num]
 # dat[, exposure_i:= sum(exposure_d > 0) - (exposure_d > 0), by = caseid]
 # dat[, exposure_i:= shift(exposure_i type = "lag"), by = officerid_num]
 setorder(dat, officerid_num, date, caseid)
-dat[, ccsum := cumsum(firearm_pointed), by = officerid_num]
+dat[, ccsum := cumsum(firearm_used), by = officerid_num]
 
 # Sum of individuals who have previously pointed a firearm
 dat[, exposure_i:= sum(ccsum > 0L, na.rm = TRUE) - (ccsum > 0L), by = caseid]
@@ -331,7 +331,9 @@ data_model <- dat[, .(
   caseid,
   officerid_num,
   officer_male,
-  firearm_pointed,
+  # firearm_pointed,
+  firearm_used,
+  firearm_discharge,
   officer_nyears,
   officer_po,
   # officer_sleo,
@@ -517,18 +519,18 @@ data_model[, officer_male2 := NULL]
 data_model <- data_model[complete.cases(data_model)]
 
 # What proportion fired or pointed a gun
-data_model[, prop_pointed := sum(firearm_pointed)/.N, by = caseid]
+data_model[, prop_used := sum(firearm_used)/.N, by = caseid]
 
 # Relevant for conditional logit
-data_model[, clog_pointed := prop_pointed > 0 & prop_pointed < 1,]
+data_model[, clog_used := prop_used > 0 & prop_used < 1,]
 
 # How many records
-data_model <- data_model[clog_pointed == TRUE] # 893
+data_model <- data_model[clog_used == TRUE] # 893
 
 # Dropping cases in which the number of officers is less than 2
 # data_model[, nofficers2 := .N, by=caseid]
 
-data_model[, c("prop_pointed", "clog_pointed") := NULL]
+data_model[, prop_used := NULL]
 
 # Decades
 data_model[, officer_nyears2 := (officer_nyears/10) ^ 2]

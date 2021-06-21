@@ -1,4 +1,4 @@
-library(njforce)
+library(mc3logit)
 library(data.table)
 library(McSpatial)
 
