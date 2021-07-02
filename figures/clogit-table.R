@@ -26,3 +26,17 @@ print(models$models$ans_model_indirect_cum, labels = models$labels, out="tex")
 # model_data[, table(exposure_i > 0, exposure_d > 0)]
 # 
 # models$models
+
+graphics.off()
+
+svg("figures/clogit-plot-direct.svg")
+plot(models$models$ans_model_direct_cum, labels = models$labels)
+title("Direct Exposure")
+dev.off()
+
+svg("figures/clogit-plot-indirect.svg")
+plot(models$models$ans_model_indirect_cum, labels = models$labels)
+title("Indirect Exposure")
+dev.off()
+
+graphics.off()

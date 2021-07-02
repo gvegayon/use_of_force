@@ -108,18 +108,23 @@ plot.clogit_perm <- function(
   ranges <- range(ci)
   ranges_extended <- ranges + c(- diff(ranges)*.75, 0)
   betas  <- stats::coef(x)
+  
+  # Making sure the CIs are CIs
+  ci[,1] <- ci[,1] - diff(ranges_extended)/200
+  ci[,2] <- ci[,2] + diff(ranges_extended)/200
 
   # Reversing order
   betas <- rev(betas)
   ci    <- ci[nrow(ci):1, , drop=FALSE]
 
-  ylims <- as.factor(colnames(ci))
+  ylims <- as.factor(rownames(ci))
 
   graphics::plot.new()
   graphics::plot.window(
     xlim = ranges_extended,
     ylim = c(1, length(ylims) + .5)
   )
+  graphics::abline(h = 1:9, lwd = 1, col = "lightgray", lty="dashed")
   graphics::abline(v = 0, lty=2, lwd=1)
   do.call(
     graphics::arrows,
