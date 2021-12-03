@@ -11,7 +11,7 @@
 #' @importFrom stats coef confint cov
 print.clogit_perm <- function(x, odds = TRUE, labels = NULL, out = "ascii", ...) {
 
-  cis <- confint(x)
+  cis <- stats::confint(x, ...)
 
   space_fmt <- if (out == "ascii") {
     c("** ", "*  ", "   ", "< 0.01", "  %.2f", "\n")
@@ -91,6 +91,8 @@ approx_sd <- function(b, pval) {
 #' @param args_points List of arguments passed to [graphics::points()]
 #' @param args_arrows List of arguments passed to [graphics::arrows()]
 #' @param labels a named list with alternative labels for the model terms.
+#' @param odds See [confint.clogit_perm].
+#' @param which. See [confint.clogit_perm].
 #' @param ... Ignored
 #' @importFrom graphics points arrows plot.new plot.window abline axis text
 plot.clogit_perm <- function(
@@ -101,14 +103,22 @@ plot.clogit_perm <- function(
   args_points   = list(pch = 19, cex = 1.5),
   args_arrows   = list(lwd = 2, code=3, angle=90, length = .1),
   labels        = NULL,
+  odds          = FALSE,
+  which.        = "coef",
   ...
 ) {
 
-  ci     <- stats::confint(x, level = level)
+  ci     <- stats::confint(x, level = level, which. = which.)
+  betas  <- stats::coef(x)
+
+  if (odds) {
+    ci[]    <- exp(ci)
+    betas[] <- exp(betas)
+  }
+
   ranges <- range(ci)
   ranges_extended <- ranges + c(- diff(ranges)*.75, 0)
-  betas  <- stats::coef(x)
-  
+
   # Making sure the CIs are CIs
   ci[,1] <- ci[,1] - diff(ranges_extended)/200
   ci[,2] <- ci[,2] + diff(ranges_extended)/200
@@ -125,7 +135,7 @@ plot.clogit_perm <- function(
     ylim = c(1, length(ylims) + .5)
   )
   graphics::abline(h = 1:9, lwd = 1, col = "lightgray", lty="dashed")
-  graphics::abline(v = 0, lty=2, lwd=1)
+  graphics::abline(v = ifelse(odds, 1, 0), lty=2, lwd=1)
   do.call(
     graphics::arrows,
     c(

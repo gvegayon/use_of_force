@@ -54,8 +54,8 @@ std::vector< std::vector<int> > find_candidates(
     const LogicalVector & as_abs
 ) {
 
-  unsigned int n = features.nrow();
-  unsigned int k = features.ncol();
+  int n = features.nrow();
+  int k = features.ncol();
 
   if (upper.size() != k)
     stop("The number of features does not match the length of the -upper- vector.");
@@ -66,9 +66,9 @@ std::vector< std::vector<int> > find_candidates(
 
   std::vector< std::vector< int > > candidates(n);
 
-  for (unsigned int i = 0u; i < n; ++i) {
+  for (int i = 0u; i < n; ++i) {
 
-    for (unsigned int j = 0u; j < i; ++j) {
+    for (int j = 0u; j < i; ++j) {
 
       if (is_within_window(features, upper, lower, as_abs, i, j)) {
 

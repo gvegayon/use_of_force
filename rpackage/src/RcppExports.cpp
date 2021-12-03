@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // find_candidates
 std::vector< std::vector<int> > find_candidates(const IntegerMatrix& features, const IntegerVector& upper, const IntegerVector& lower, const LogicalVector& as_abs);
 RcppExport SEXP _mc3logit_find_candidates(SEXP featuresSEXP, SEXP upperSEXP, SEXP lowerSEXP, SEXP as_absSEXP) {

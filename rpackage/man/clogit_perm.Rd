@@ -25,3 +25,12 @@ clogit_perm(
 \description{
 Conditional logit with permutation
 }
+\details{
+In the case that p-values go to zero, these are replaced with the
+pseudo-count, this is, \code{1/nperm} (Knijnenburg et al., 2009.)
+}
+\references{
+Knijnenburg, T. A., Wessels, L. F. A., Reinders, M. J. T., & Shmulevich, I. (2009).
+Fewer permutations, more accurate P-values. Bioinformatics, 25(12), 161–168.
+\doi{10.1093/bioinformatics/btp211}
+}

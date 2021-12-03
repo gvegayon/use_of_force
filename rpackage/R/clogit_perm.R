@@ -6,6 +6,13 @@
 #' @export
 #' @importFrom survival clogit
 #' @importFrom stats terms
+#' @details
+#' In the case that p-values go to zero, these are replaced with the
+#' pseudo-count, this is, `1/nperm` (Knijnenburg et al., 2009.)
+#' @references
+#' Knijnenburg, T. A., Wessels, L. F. A., Reinders, M. J. T., & Shmulevich, I. (2009).
+#' Fewer permutations, more accurate P-values. Bioinformatics, 25(12), 161–168.
+#' \doi{10.1093/bioinformatics/btp211}
 clogit_perm <- function(
   nperm = 1000,
   formula,
@@ -41,8 +48,9 @@ clogit_perm <- function(
     stop("There are missings in the strata() term.")
 
     # Finding candidates
+  groups <- cbind(groups)
   candidates <- find_candidates(
-    features = cbind(groups),
+    features = groups,
     upper    = 0,
     lower    = 0,
     as_abs   = TRUE
@@ -111,6 +119,12 @@ clogit_perm <- function(
   pvals   <- rowMeans(t(coefs) < stats::coef(model0))
   pvals[] <- ifelse(pvals < .5, pvals, 1 - pvals)*2
 
+  # Minimum p-value (lower-bound):
+  # p-values can never be zero since the observed data is included in the
+  # distribution. Instead, we replace the zero p-values with a pseudo-count
+  # 1/N replicates. (see )
+  pvals[pvals < .Machine$double.xmin] <- 1/nperm
+
   structure(
     list(
       pvals      = pvals,
@@ -139,27 +153,43 @@ nobs.clogit_perm <- function(object, ...) {
   stats::nobs(object$fit)
 }
 
-#' @export
+#' Confidence interval for CLogit
+#' @param object An object of class [clogit_perm]
+#' @param parm Integer vector. Indicates which parameters to include in the
+#' output.
+#' @param level Numeric. Level (see [stats::confint]).
 #' @param which. When `"coef"`, it will generate the confidence interval for the
 #' parameter estimates, otherwise it generates the confidence interval of the reference
 #' distribution.
-confint.clogit_perm <- function(object, parm, level = 0.95, which. = "coef",...) {
+#' @param sigma_perm Logical scalar. When `TRUE`, uses the permutation based
+#' standard errors for computing the CI (only used when `which. = "coef"`)
+#' @param ... Ignored.
+#' @seealso clogit_perm
+#' @export
+confint.clogit_perm <- function(
+    object, parm, level = 0.95, which. = "coef",
+    sigma_perm= FALSE,
+    ...
+    ) {
 
   if (missing(parm))
     parm <- 1:ncol(object$coefs)
-  
+
   if (which. == "coef") {
-    
+
     coe   <- coef(object)
-    df    <- stats::nobs(object) - length(coe)
-    sigma <- abs(coe/qt(object$pvals/2, df = df))
+    # df    <- stats::nobs(object) - length(coe)
+    sigma <- if (sigma_perm)
+      sqrt(diag(stats::vcov(object)))
+    else
+      abs(coe/qnorm(object$pvals/2)) # abs(coe/qt(object$pvals/2, df = df))
     a     <- (1 - level)/2
-    pm    <- qt(p = a, df = df) * sigma
-    
+    pm    <- qnorm(p = a) * sigma # qt(p = a, df = df) * sigma
+
     ans <- cbind(coe + pm, coe - pm)
     colnames(ans) <- sprintf("%.1f %%", c(a, 1 - a)*100)
     ans
-    
+
   } else {
 
     t(apply(
@@ -167,8 +197,9 @@ confint.clogit_perm <- function(object, parm, level = 0.95, which. = "coef",...)
       stats::quantile,
       probs = c(0, 1) + c(1, -1)*(1 - level)/2
       ))
+
   }
-  
+
 }
 
 #' #' Extract components for texreg objects

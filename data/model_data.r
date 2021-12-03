@@ -302,7 +302,43 @@ dat[, table(as.integer(exposure_i_cum), exposure_i_cum)]
 
 # View(dat[officerid_num==1653, .(caseid, officers, exposure_i, exposure_i_cum, alters_cum, officerid_num)])
 
+# Unique alters (direct exposure) ---------------------------------
 
+# Avoiding double counting
+setorder(dat, officerid_num, date, caseid)
+dat[, officers_used := paste0(
+  caseid, "-", officerid_num[which(firearm_used > 0)], collapse = ","
+), by = caseid]
+
+dat[, c("officers_cum_d") := (function(x, ids, id) {
+  d <- unlist(strsplit(x, ","))
+  
+  d <- data.table(
+    off  = stringr::str_extract(d, "[0-9]+$"),
+    case = stringr::str_extract(d, "^[0-9]+")
+  )
+  d <- d[complete.cases(d) & off != id[1]]
+  
+  if (nrow(d) == 0)
+    return(integer(length(ids)))
+  
+  m <- matrix(0L,nrow = length(ids), ncol=length(unique(d$off)),
+              dimnames = list(ids, unique(d$off)))
+  
+  m[cbind(d$case, d$off)] <- 1L
+  # print(m)    
+  m <- matrix(apply(m, 2, cumsum), ncol = length(ids), byrow = TRUE)
+  m[] <- m[] > 0
+  # print(m)  
+  colSums(m)
+  
+})(officers_used, caseid, officerid_num), by = officerid_num]
+
+dat[, exposure_d_cum2 := shift(as.integer(officers_cum_d), n = 1, type = "lag"), by = officerid_num]
+dat[, table(exposure_d_cum2, exposure_d_cum)]
+
+# View(dat[officerid_num==1653 , .(officerid_num, caseid, firearm_used, exposure_d_cum, exposure_d_cum2,officers_used)])
+View(dat[exposure_d_cum > 0 & exposure_d_cum2 == 0 , .(officerid_num, caseid, firearm_used, exposure_d_cum, exposure_d_cum2,officers_used)])
 # Number of days since the exposure --------------------------------------------
 setorder(dat, officerid_num, date, caseid)
 

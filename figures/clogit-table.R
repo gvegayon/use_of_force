@@ -1,7 +1,7 @@
 library(texreg)
 library(mc3logit)
 
-models <- readRDS("models/clogit.rds")
+models <- readRDS("models/clogit2.rds")
 
 
 # screenreg(
@@ -14,8 +14,8 @@ paste(
   "The last column corresponds to a logistic regression."
 ) #, odds = TRUE, ci.force = TRUE, single.row = TRUE)
 
-print(models$models$ans_model_direct_cum, labels = models$labels, out="tex")
-print(models$models$ans_model_indirect_cum, labels = models$labels, out="tex")
+print(models$models$ans_model_direct_cum, labels = models$labels, out="ascii")
+print(models$models$ans_model_indirect_cum, labels = models$labels, out="ascii")
 # print(models$models$ans_joint, labels = models$labels, out="tex")
 
 # model_data[
@@ -36,6 +36,38 @@ dev.off()
 
 svg("figures/clogit-plot-indirect.svg")
 plot(models$models$ans_model_indirect_cum, labels = models$labels)
+title("Indirect Exposure")
+dev.off()
+
+svg("figures/clogit-plot-direct-odds.svg")
+plot(models$models$ans_model_direct_cum, labels = models$labels, odds = TRUE)
+title("Direct Exposure")
+dev.off()
+
+svg("figures/clogit-plot-indirect-odds.svg")
+plot(models$models$ans_model_indirect_cum, labels = models$labels, odds = TRUE)
+title("Indirect Exposure")
+dev.off()
+
+# Null distribution confint ----------
+
+svg("figures/clogit-plot-direct-nullconfint.svg")
+plot(models$models$ans_model_direct_cum, labels = models$labels, which.="null")
+title("Direct Exposure")
+dev.off()
+
+svg("figures/clogit-plot-indirect-nullconfint.svg")
+plot(models$models$ans_model_indirect_cum, labels = models$labels, which.="null")
+title("Indirect Exposure")
+dev.off()
+
+svg("figures/clogit-plot-direct-odds-nullconfint.svg")
+plot(models$models$ans_model_direct_cum, labels = models$labels, which.="null", odds = TRUE)
+title("Direct Exposure")
+dev.off()
+
+svg("figures/clogit-plot-indirect-odds-nullconfint.svg")
+plot(models$models$ans_model_indirect_cum, labels = models$labels, which.="null", odds = TRUE)
 title("Indirect Exposure")
 dev.off()
 

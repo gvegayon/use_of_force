@@ -12,6 +12,8 @@
   args_points = list(pch = 19, cex = 1.5),
   args_arrows = list(lwd = 2, code = 3, angle = 90, length = 0.1),
   labels = NULL,
+  odds = FALSE,
+  which. = "coef",
   ...
 )
 }
@@ -29,6 +31,10 @@
 \item{args_arrows}{List of arguments passed to \code{\link[graphics:arrows]{graphics::arrows()}}}
 
 \item{labels}{a named list with alternative labels for the model terms.}
+
+\item{odds}{See \link{confint.clogit_perm}.}
+
+\item{which.}{See \link{confint.clogit_perm}.}
 
 \item{...}{Ignored}
 }
