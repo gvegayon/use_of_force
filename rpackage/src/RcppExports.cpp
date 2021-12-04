@@ -10,6 +10,19 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// exposure
+List exposure(const IntegerVector& id_indiv, const IntegerVector& id_events, const IntegerVector& actions, int offset);
+RcppExport SEXP _mc3logit_exposure(SEXP id_indivSEXP, SEXP id_eventsSEXP, SEXP actionsSEXP, SEXP offsetSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< const IntegerVector& >::type id_indiv(id_indivSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type id_events(id_eventsSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type actions(actionsSEXP);
+    Rcpp::traits::input_parameter< int >::type offset(offsetSEXP);
+    rcpp_result_gen = Rcpp::wrap(exposure(id_indiv, id_events, actions, offset));
+    return rcpp_result_gen;
+END_RCPP
+}
 // find_candidates
 std::vector< std::vector<int> > find_candidates(const IntegerMatrix& features, const IntegerVector& upper, const IntegerVector& lower, const LogicalVector& as_abs);
 RcppExport SEXP _mc3logit_find_candidates(SEXP featuresSEXP, SEXP upperSEXP, SEXP lowerSEXP, SEXP as_absSEXP) {
@@ -85,6 +98,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_mc3logit_exposure", (DL_FUNC) &_mc3logit_exposure, 4},
     {"_mc3logit_find_candidates", (DL_FUNC) &_mc3logit_find_candidates, 4},
     {"_mc3logit_permute", (DL_FUNC) &_mc3logit_permute, 1},
     {"_mc3logit_sim_events", (DL_FUNC) &_mc3logit_sim_events, 16},

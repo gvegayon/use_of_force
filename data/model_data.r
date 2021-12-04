@@ -300,45 +300,27 @@ dat[, c("alters_cum") := (function(x, ids, id) {
 dat[, alters_cum := shift(as.integer(alters_cum), n = 1, type = "lag"), by = officerid_num]
 dat[, table(as.integer(exposure_i_cum), exposure_i_cum)]
 
-# View(dat[officerid_num==1653, .(caseid, officers, exposure_i, exposure_i_cum, alters_cum, officerid_num)])
+library(mc3logit)
+e_dyn <- exposure_dyn(
+  id_indiv  = dat$officerid_num,
+  id_events = dat$caseid,
+  actions   = dat$firearm_used
+)
 
-# Unique alters (direct exposure) ---------------------------------
+prop.table(table(
+  e_dyn[,"exposure_d_cum"] -
+  dat$exposure_d_cum
+))
 
-# Avoiding double counting
-setorder(dat, officerid_num, date, caseid)
-dat[, officers_used := paste0(
-  caseid, "-", officerid_num[which(firearm_used > 0)], collapse = ","
-), by = caseid]
+prop.table(table(
+  e_dyn[,"exposure_i_cum"] -
+    dat$exposure_i_cum
+)) * 100 |> print(digits=2)
 
-dat[, c("officers_cum_d") := (function(x, ids, id) {
-  d <- unlist(strsplit(x, ","))
-  
-  d <- data.table(
-    off  = stringr::str_extract(d, "[0-9]+$"),
-    case = stringr::str_extract(d, "^[0-9]+")
-  )
-  d <- d[complete.cases(d) & off != id[1]]
-  
-  if (nrow(d) == 0)
-    return(integer(length(ids)))
-  
-  m <- matrix(0L,nrow = length(ids), ncol=length(unique(d$off)),
-              dimnames = list(ids, unique(d$off)))
-  
-  m[cbind(d$case, d$off)] <- 1L
-  # print(m)    
-  m <- matrix(apply(m, 2, cumsum), ncol = length(ids), byrow = TRUE)
-  m[] <- m[] > 0
-  # print(m)  
-  colSums(m)
-  
-})(officers_used, caseid, officerid_num), by = officerid_num]
+dat$exposure_d_cum2 <- e_dyn[, "exposure_d_cum"]
+dat$exposure_i_cum2 <- e_dyn[, "exposure_i_cum"]
 
-dat[, exposure_d_cum2 := shift(as.integer(officers_cum_d), n = 1, type = "lag"), by = officerid_num]
-dat[, table(exposure_d_cum2, exposure_d_cum)]
 
-# View(dat[officerid_num==1653 , .(officerid_num, caseid, firearm_used, exposure_d_cum, exposure_d_cum2,officers_used)])
-View(dat[exposure_d_cum > 0 & exposure_d_cum2 == 0 , .(officerid_num, caseid, firearm_used, exposure_d_cum, exposure_d_cum2,officers_used)])
 # Number of days since the exposure --------------------------------------------
 setorder(dat, officerid_num, date, caseid)
 
@@ -377,6 +359,8 @@ data_model <- dat[, .(
   exposure_i,
   exposure_d_cum,
   exposure_i_cum,
+  exposure_d_cum2,
+  exposure_i_cum2,
   alters_cum,
   officer_race,
   nevents,
@@ -571,7 +555,7 @@ data_model[, prop_used := NULL]
 # Decades
 data_model[, officer_nyears2 := (officer_nyears/10) ^ 2]
 
-fwrite(data_model, file = "data/model_data.csv")
+fwrite(data_model, file = "data/model_data_dyn.csv")
 
 dat[, table(exposure_i, exposure_d, useNA = "always")]
 # exposure_d

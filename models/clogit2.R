@@ -2,17 +2,28 @@ library(data.table)
 library(survival)
 library(mc3logit)
 
-model_data <- fread("data/model_data.csv", na.strings = "")
+model_data <- fread("data/model_data_dyn.csv", na.strings = "")
 model_data[, officer_nyears_sd := officer_nyears/sd(officer_nyears, TRUE)]
 model_data <- model_data[clog_used == TRUE,]
 ncpus      <- 3L
 nperms     <- 2000L
 
+table(
+  model_data$exposure_d_cum -
+  model_data$exposure_d_cum2
+)
+
+table(
+  model_data$exposure_i_cum -
+  model_data$exposure_i_cum2
+)
+
+
 # Cumuilative exposure ---------------------------------------------------------
 
 # Previous use
 model_direct_cum <- firearm_used ~
-  exposure_d_cum +
+  exposure_d_cum2 +
   nevents +
   officer_male +
   officer_nyears +
@@ -23,7 +34,7 @@ model_direct_cum <- firearm_used ~
   strata(caseid)
 
 model_indirect_cum <- firearm_used ~
-  exposure_i_cum +
+  exposure_i_cum2 +
   nevents +
   officer_male +
   officer_nyears +
@@ -70,8 +81,10 @@ varnames <- list(
   'I(exposure_i * officer_nyears_sd)' = "Exposure (indirect) x Years of Exp.",
   'I(as.integer(exposure_d > 0))' = "Exposure (direct)",
   'exposure_d_cum' = "Exposure (direct) cumulative",
+  'exposure_d_cum2' = "Exposure (direct) cumulative (v2)",
   'I(as.integer(exposure_i > 0))' = "Exposure (indirect)",
   'exposure_i_cum' = "Exposure (indirect) cumulative",
+  'exposure_i_cum2' = "Exposure (indirect) cumulative (v2)",
   'officer_male' = "Sex = Male",
   'nevents' = "N of Events",
   'officer_nyears' = "Years of Exp.",
@@ -89,10 +102,10 @@ saveRDS(
   list(
     models   = mget(ls(pattern = "^ans_.+$")),
     labels   = varnames
-    ), file = "models/clogit2.rds"
+    ), file = "models/clogit2_dyn.rds"
 )
 
-models <- readRDS("models/clogit2.rds")
+models <- readRDS("models/clogit2_dyn.rds")
 invisible(lapply(models$models, print, labels = models$labels))
 lapply(models$models, confint, labels = models$labels)
 

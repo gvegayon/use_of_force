@@ -10,7 +10,28 @@
 #' to be an action (true).
 #' @param offset Integer. Offset in terms of lead
 #' @export
+#' @return
+#' A matrix with the following columns:
+#' - cumsum Integer vector. Cumulative sum of the actions vector.
+#' - exposure_i Integer vector. Indirect exposure.
+#' - exposure_d Integer vector. Direct exposure.
+#' - exposure_i_cum Integer vector. Cumulative indirect exposure.
+#' - exposure_d_cum Integer vector. Cumulative direct exposure.
+#' @examples
+#' dat <- data.frame(
+#'   event = c(1,1,1, 2,2,2, 3,3,3,3, 4,4,4,4),
+#'   id    = c(1,2,3, 1,2,4, 2,3,4,5, 5,1,6,2),
+#'   fired = c(1,1,1, 0,1,1, 0,1,0,1, 1,0,1,1)
+#' )
 #'
+#' counts <- with(dat, exposure_dyn(
+#'   id_indiv  = id,
+#'   id_events = event,
+#'   actions   = fired,
+#'   offset    = 0
+#' ))
+#'
+#' cbind(dat, counts)
 exposure_dyn <- function(
   id_indiv,
   id_events,
@@ -22,10 +43,10 @@ exposure_dyn <- function(
   ord <- order(id_events)
 
   ans <- do.call(cbind, exposure_dyn_(
-    id_indiv = id_indiv[ord],
+    id_indiv  = id_indiv[ord],
     id_events = id_events[ord],
-    actions = actions[ord],
-    offset = offset[ord]
+    actions   = actions[ord],
+    offset    = offset
   ))
 
   ans[order((1:nrow(ans))[ord]),]
