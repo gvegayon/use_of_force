@@ -274,7 +274,7 @@ List exposure(
 #undef D_COUNTED
 #undef ID_COUNTED
 
-/***R
+/* **R
 library(data.table)
 
 # Generating the data
